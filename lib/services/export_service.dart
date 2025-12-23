@@ -4,7 +4,7 @@ import 'package:path_provider/path_provider.dart';
 import '../models/sync_word.dart';
 
 class ExportService {
-  /// Generates the text_gz.md content with <w> tags
+  /// Generates the text_gz.md content with `<w>` tags
   static String generateTaggedMarkdown(List<SyncWord> words) {
     final StringBuffer buffer = StringBuffer();
 

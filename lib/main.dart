@@ -46,9 +46,8 @@ class ChronoScriptApp extends StatelessWidget {
         fontFamily: 'NotoSerifEthiopic',
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF8D6E63), // Brown/Earth tone base
-          background: const Color(0xFFFDF5E6), // "Old Lace" / Vellum
-          surface: const Color(0xFFFFFBFA),
-          onBackground: Colors.black87,
+          surface: const Color(0xFFFDF5E6), // "Old Lace" / Vellum
+          onSurface: Colors.black87,
           primary: const Color(0xFF5D4037),
           secondary: const Color(0xFF795548),
         ),

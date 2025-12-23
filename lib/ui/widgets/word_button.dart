@@ -61,25 +61,32 @@ class _WordButtonState extends State<WordButton> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     Color getBackgroundColor() {
-      if (widget.isActive)
+      if (widget.isActive) {
         return Theme.of(context).colorScheme.primaryContainer;
-      if (widget.isTapped)
+      }
+      if (widget.isTapped) {
         return Theme.of(
           context,
-        ).colorScheme.secondaryContainer.withOpacity(0.5);
+        ).colorScheme.secondaryContainer.withValues(alpha: 0.5);
+      }
       return Colors.white;
     }
 
     Color getBorderColor() {
-      if (widget.isActive) return Theme.of(context).colorScheme.primary;
-      if (widget.isTapped) return Theme.of(context).colorScheme.secondary;
+      if (widget.isActive) {
+        return Theme.of(context).colorScheme.primary;
+      }
+      if (widget.isTapped) {
+        return Theme.of(context).colorScheme.secondary;
+      }
       return Colors.grey.shade300;
     }
 
     return Listener(
       onPointerDown: (_) {
-        if (!widget.isActive)
+        if (!widget.isActive) {
           return; // Only active word starts tapping? Or can we seek by tapping?
+        }
         // The requirement says "active word". Seeking is separate logic (click).
         // But for recording, it's the active word.
         _startTimer();
@@ -115,7 +122,7 @@ class _WordButtonState extends State<WordButton> with TickerProviderStateMixin {
                     backgroundColor: Colors.transparent,
                     color: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.2),
+                    ).colorScheme.primary.withValues(alpha: 0.2),
                   ),
                 ),
               ),

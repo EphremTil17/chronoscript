@@ -2,7 +2,7 @@ import 'dart:io';
 import '../models/sync_word.dart';
 
 class IngestionService {
-  /// Parses a raw text string or markdown content into a List<SyncWord>
+  /// Parses a raw text string or markdown content into a `List<SyncWord>`
   static List<SyncWord> parseContent(String content) {
     // 1. Normalize line endings
     content = content.replaceAll('\r\n', '\n');

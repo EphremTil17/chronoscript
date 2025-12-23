@@ -44,6 +44,7 @@ dependencies:
   # UI/Markdown
   flutter_markdown: ^0.7.1
   google_fonts: ^6.1.0 # Useful for fallbacks
+  json_annotation: ^4.8.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -56,7 +57,6 @@ dev_dependencies:
   # JSON generation
   build_runner: ^2.4.8
   json_serializable: ^6.7.1
-  json_annotation: ^4.8.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -98,11 +98,7 @@ flutter:
   #       - asset: fonts/Schyler-Regular.ttf
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+  fonts:
+    - family: NotoSerifEthiopic
+      fonts:
+        - asset: assets/fonts/toto_serif_ethiopic.ttf

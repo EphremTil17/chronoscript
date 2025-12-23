@@ -7,7 +7,6 @@ import 'package:chronoscript/controllers/audio_controller.dart';
 import 'package:chronoscript/ui/widgets/word_button.dart';
 import 'package:chronoscript/services/export_service.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:audio_waveforms/audio_waveforms.dart';
 
 class TappingPage extends ConsumerStatefulWidget {
   const TappingPage({super.key});
