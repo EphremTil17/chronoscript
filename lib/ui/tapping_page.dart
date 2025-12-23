@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async'; // Required for Timer
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronoscript/providers/app_state.dart';
 import 'package:chronoscript/controllers/audio_controller.dart';
@@ -21,12 +22,19 @@ class _TappingPageState extends ConsumerState<TappingPage> {
   // For scrolling the grid
   final ScrollController _gridScrollController = ScrollController();
 
+  Timer? _autoSaveTimer;
+
   @override
   void initState() {
     super.initState();
     // Auto-focus to capture keyboard events immediately
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_keyboardFocus);
+    });
+
+    // Start Auto-Save Timer (every 60 seconds)
+    _autoSaveTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      _autoSave();
     });
 
     // Auto-Scroll Logic
@@ -80,6 +88,7 @@ class _TappingPageState extends ConsumerState<TappingPage> {
 
   @override
   void dispose() {
+    _autoSaveTimer?.cancel();
     _keyboardFocus.dispose();
     _gridScrollController.dispose();
     super.dispose();
@@ -122,14 +131,15 @@ class _TappingPageState extends ConsumerState<TappingPage> {
     }
   }
 
-  // Auto-Save method (would ideally be in a service/provider)
+  // Auto-Save method
   void _autoSave() async {
     final state = ref.read(tappingProvider);
     if (state.words.isEmpty) return;
 
-    // For MVP, just save to a fixed .chrono_tmp in temp dir or project root
-    // But since we are in a sandbox, let's just log it or save to a known path if available.
-    // Let's omit actual IO for now or use path_provider.
+    await ExportService.saveAutoSave(state.words);
+
+    // Optional: Log success if needed
+    // debugPrint("Auto-saved");
   }
 
   @override

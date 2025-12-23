@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../models/sync_word.dart';
 
 class ExportService {
@@ -53,5 +54,19 @@ class ExportService {
 
     await mdFile.writeAsString(taggedMd);
     await jsonFile.writeAsString(syncJson);
+  }
+
+  /// Performs an auto-save to the temporary directory
+  static Future<void> saveAutoSave(List<SyncWord> words) async {
+    try {
+      final directory = await getTemporaryDirectory();
+      final File file = File('${directory.path}/chrono_autosave.json');
+      final syncJson = generateSyncJson(words);
+      await file.writeAsString(syncJson);
+      // print("Auto-saved to ${file.path}");
+    } catch (e) {
+      // Slient fail for auto-save or log
+      // print("Auto-save failed: $e");
+    }
   }
 }
