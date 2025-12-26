@@ -36,7 +36,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _pickAudio() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       dialogTitle: 'Select Audio Recording',
-      type: FileType.audio,
+      type: FileType.custom,
+      allowedExtensions: ['mp3', 'wav'],
     );
     if (result != null) {
       setState(() => _audioPath = result.files.single.path);
