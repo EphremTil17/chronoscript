@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:async'; // Required for Timer
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronoscript/providers/app_state.dart';
 import 'package:chronoscript/controllers/audio_controller.dart';
-import 'package:chronoscript/ui/widgets/word_button.dart';
 import 'package:chronoscript/services/export_service.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:chronoscript/models/sync_word.dart';
+import 'package:chronoscript/ui/widgets/verse_sidebar.dart';
+import 'package:chronoscript/ui/widgets/liturgy_hub.dart';
 
 class TappingPage extends ConsumerStatefulWidget {
   const TappingPage({super.key});
@@ -17,70 +19,31 @@ class TappingPage extends ConsumerStatefulWidget {
 
 class _TappingPageState extends ConsumerState<TappingPage> {
   final FocusNode _keyboardFocus = FocusNode();
-
-  // For scrolling the grid
   final ScrollController _gridScrollController = ScrollController();
-
   Timer? _autoSaveTimer;
+
+  // New: Live Timer for Green State
+  int _liveMs = 0;
 
   @override
   void initState() {
     super.initState();
-    // Auto-focus to capture keyboard events immediately
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_keyboardFocus);
     });
 
-    // Start Auto-Save Timer (every 60 seconds)
-    _autoSaveTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      _autoSave();
-    });
+    // Auto-Save every 30s
+    _autoSaveTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _autoSave(),
+    );
 
-    // Auto-Scroll Logic
-    // We listen to the audio position stream directly here to drive the UI scroll
-    // This is a bit imperative but efficient for scrolling.
+    // Auto-Scroll Listener & Live Timer
     ref.read(audioControllerProvider).positionStream.listen((position) {
-      final state = ref.read(tappingProvider);
-
-      // Only auto-scroll in Verification Mode
-      if (state.isVerificationMode && state.isPlaying) {
-        final currentMs = position.inMilliseconds;
-
-        // Find the word that contains this timestamp
-        // Optimization: We could track 'lastFoundIndex' to avoid O(N) scan every frame
-        // But for < few thousand words, simple search is fine for MVP.
-        int foundIndex = -1;
-        for (int i = 0; i < state.words.length; i++) {
-          final w = state.words[i];
-          if (w.startTime != null && w.endTime != null) {
-            if (currentMs >= w.startTime! && currentMs <= w.endTime!) {
-              foundIndex = i;
-              break;
-            }
-          }
-        }
-
-        if (foundIndex != -1) {
-          // Highlight the word in the UI?
-          // We currently only highlight 'currentIndex'.
-          // Should we update 'currentIndex' to match playback in verification mode?
-          // YES, that would visually sync the grid.
-          if (state.currentIndex != foundIndex) {
-            ref.read(tappingProvider.notifier).setIndex(foundIndex);
-
-            // Scroll to it
-            if (_gridScrollController.hasClients) {
-              // Calculate rough position or use jump
-              // Grid cell height approx 75 (aspect ratio 2 + spacing).
-              // Let's use insureVisible or just scroll lookup.
-              // Since it's a grid, it's row based.
-              // Doing a simple calculation:
-              // This is approximate.
-              // Better to just let the user scroll or use a library, but simplest is:
-              // _gridScrollController.animateTo(...)
-            }
-          }
-        }
+      if (mounted) {
+        setState(() {
+          _liveMs = position.inMilliseconds;
+        });
       }
     });
   }
@@ -95,14 +58,25 @@ class _TappingPageState extends ConsumerState<TappingPage> {
 
   void _handleKeyEvent(KeyEvent event) {
     if (event is KeyDownEvent) {
-      final notifier = ref.read(tappingProvider.notifier);
       final audioCtrl = ref.read(audioControllerProvider);
-      final state = ref.read(
-        tappingProvider,
-      ); // Added to access state for play/pause
+      final notifier = ref.read(tappingProvider.notifier);
+      final state = ref.read(tappingProvider);
 
       if (event.logicalKey == LogicalKeyboardKey.space) {
-        // Play/Pause toggle
+        if (state.isRecording) {
+          notifier.chainWord(audioCtrl.currentPosition.inMilliseconds);
+        } else {
+          if (!state.isPlaying) {
+            audioCtrl.play();
+            notifier.setPlaying(true);
+          }
+          notifier.startRecordingWord(audioCtrl.currentPosition.inMilliseconds);
+        }
+      } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+        if (state.isRecording) {
+          notifier.endRecordingWord(audioCtrl.currentPosition.inMilliseconds);
+        }
+      } else if (event.logicalKey == LogicalKeyboardKey.keyP) {
         if (state.isPlaying) {
           audioCtrl.pause();
           notifier.setPlaying(false);
@@ -111,34 +85,30 @@ class _TappingPageState extends ConsumerState<TappingPage> {
           notifier.setPlaying(true);
         }
       } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-        // Rewind 5s
         audioCtrl.seekBackward(const Duration(seconds: 5));
-      } else if (event.logicalKey == LogicalKeyboardKey.keyZ &&
-          HardwareKeyboard.instance.isControlPressed) {
-        // Undo
-        notifier.undo();
-        audioCtrl.seekBackward(const Duration(seconds: 5));
-      } else if (event.logicalKey == LogicalKeyboardKey.keyF &&
-          HardwareKeyboard.instance.isControlPressed) {
-        // Footnote flagging
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Footnote flagged at current word")),
-        );
-        // TODO: In a real app, store this in an 'annotations' map in the state
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        audioCtrl.seekBackward(const Duration(seconds: -5));
       }
-      // Add more shortcuts as needed
     }
   }
 
-  // Auto-Save method
   void _autoSave() async {
     final state = ref.read(tappingProvider);
-    if (state.words.isEmpty) return;
+    if (state.verses.isEmpty) return;
+    await ExportService.saveAutoSave(state.verses);
+  }
 
-    await ExportService.saveAutoSave(state.words);
-
-    // Optional: Log success if needed
-    // debugPrint("Auto-saved");
+  void _onVerseSelected(int index) {
+    ref.read(tappingProvider.notifier).selectVerse(index);
+    final verse = ref.read(tappingProvider).verses[index];
+    for (var w in verse.words) {
+      if (w.startTime != null) {
+        ref
+            .read(audioControllerProvider)
+            .seek(Duration(milliseconds: w.startTime!));
+        break;
+      }
+    }
   }
 
   @override
@@ -146,179 +116,458 @@ class _TappingPageState extends ConsumerState<TappingPage> {
     final state = ref.watch(tappingProvider);
     final notifier = ref.read(tappingProvider.notifier);
     final audioCtrl = ref.read(audioControllerProvider);
+    final currentVerseWords = state.currentWords;
+    final bool isRecording = state.isRecording;
 
-    // Auto-scroll logic: Check if current index is valid and scroll if needed
-    // This is basic; for "Follow Audio" verification mode we need more complex logic later.
-    if (state.words.isNotEmpty && state.currentIndex < state.words.length) {
-      // Basic keeping visible logic can be added here
-    }
+    final bool isSidebarLocked = isRecording;
+    final bool isGridSelectionLocked = isRecording;
 
     return KeyboardListener(
       focusNode: _keyboardFocus,
       onKeyEvent: _handleKeyEvent,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Tapping Session"),
-          actions: [
-            IconButton(
-              icon: Icon(
-                state.isVerificationMode ? Icons.check_circle : Icons.edit,
-              ),
-              onPressed: notifier.toggleVerificationMode,
-              tooltip: state.isVerificationMode
-                  ? "Switch to Tapping Mode"
-                  : "Switch to Verification Mode",
-            ),
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: () async {
-                final String? result = await FilePicker.platform
-                    .getDirectoryPath();
-                if (result != null) {
-                  try {
-                    await ExportService.exportFiles(result, state.words);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Exported to $result")),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Export failed: $e"),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                }
-              },
-            ),
-          ],
-        ),
+        backgroundColor: const Color(0xFFF5F1E8),
         body: Column(
           children: [
-            // Top: Waveform & Transport Controls (Placeholder for now)
-            Container(
-              height: 150,
-              color: Colors.black12,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Audio Waveform Visualization Here"),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.replay_5),
-                          onPressed: () => audioCtrl.seekBackward(
-                            const Duration(seconds: 5),
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            state.isPlaying ? Icons.pause : Icons.play_arrow,
-                          ),
-                          onPressed: () {
-                            if (state.isPlaying) {
-                              audioCtrl.pause();
-                              notifier.setPlaying(false);
-                            } else {
-                              audioCtrl.play();
-                              notifier.setPlaying(true);
-                            }
-                          },
-                        ),
-                        // Speed Slider
-                        SizedBox(
-                          width: 150,
-                          child: Slider(
-                            value: state.playbackSpeed,
-                            min: 0.5,
-                            max: 2.0,
-                            divisions: 6,
-                            label: "${state.playbackSpeed}x",
-                            onChanged: (val) {
-                              notifier.setSpeed(val);
-                              audioCtrl.setSpeed(val);
-                            },
-                          ),
-                        ),
-                      ],
+            // MAIN CONTENT AREA (Sidebar + Right Panel)
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // LEFT: Full-Height Sidebar
+                  SizedBox(
+                    width: 240,
+                    child: VerseSidebar(
+                      verses: state.verses,
+                      selectedIndex: state.selectedVerseIndex,
+                      onVerseSelected: _onVerseSelected,
+                      isLocked: isSidebarLocked,
                     ),
-                  ],
-                ),
+                  ),
+
+                  // RIGHT: Header, Hub, Grid
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          left: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          // 1. Right Panel Header
+                          Container(
+                            height:
+                                48, // Slightly taller for better touch target
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFF5F1E8,
+                              ), // Matches background
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF8B1538),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  "ChronoScript Studio: ${state.currentVerse.id.toUpperCase()}",
+                                  style: GoogleFonts.lexend(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF2C2C2C),
+                                  ),
+                                ),
+                                const Spacer(),
+                                // Removed placeholder settings/fullscreen icons per request
+                              ],
+                            ),
+                          ),
+
+                          // 2. Control Hub (Compact)
+                          LiturgyControlHub(
+                            state: state,
+                            liveMs: _liveMs,
+                            onStart: () => notifier.startRecordingWord(_liveMs),
+                            onEnd: () => notifier.endRecordingWord(_liveMs),
+                            onChain: () => notifier.chainWord(_liveMs),
+                            onTogglePlay: () {
+                              if (state.isPlaying) {
+                                audioCtrl.pause();
+                                notifier.setPlaying(false);
+                              } else {
+                                audioCtrl.play();
+                                notifier.setPlaying(true);
+                              }
+                            },
+                            onSeekBackward: () => audioCtrl.seekBackward(
+                              const Duration(seconds: 5),
+                            ),
+                            onSeekForward: () => audioCtrl.seekBackward(
+                              const Duration(seconds: -5),
+                            ),
+                          ),
+
+                          // 3. Word Grid with Header
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Grid Header
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    32,
+                                    16,
+                                    32,
+                                    16,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "Word Synchronization",
+                                        style: GoogleFonts.lexend(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF2C2C2C),
+                                        ),
+                                      ),
+                                      Row(
+                                        children: [
+                                          _buildLegendItem(
+                                            "Synced",
+                                            const Color(0xFFB8860B),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          _buildLegendItem(
+                                            "Active",
+                                            const Color(0xFF8B1538),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          _buildLegendItem(
+                                            "Pending",
+                                            Colors.grey.shade400,
+                                            isCircle: true,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: GridView.builder(
+                                    controller: _gridScrollController,
+                                    padding: const EdgeInsets.fromLTRB(
+                                      32,
+                                      0,
+                                      32,
+                                      32,
+                                    ),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                                          maxCrossAxisExtent: 220,
+                                          mainAxisSpacing: 20,
+                                          crossAxisSpacing: 20,
+                                          childAspectRatio: 1.6,
+                                        ),
+                                    itemCount: currentVerseWords.length,
+                                    itemBuilder: (context, index) {
+                                      final word = currentVerseWords[index];
+                                      return _WordCard(
+                                        word: word,
+                                        isSelected:
+                                            index == state.selectedWordIndex,
+                                        isSynced:
+                                            word.startTime != null &&
+                                            word.endTime != null,
+                                        isRecordingActive:
+                                            isRecording &&
+                                            state.recordingWordIndex == index,
+                                        isChainedToNext: _isChained(
+                                          currentVerseWords,
+                                          index,
+                                        ),
+                                        onTap: isGridSelectionLocked
+                                            ? null
+                                            : () {
+                                                notifier.selectWord(index);
+                                                if (word.startTime != null &&
+                                                    !state.isRecording) {
+                                                  audioCtrl.seek(
+                                                    Duration(
+                                                      milliseconds:
+                                                          word.startTime!,
+                                                    ),
+                                                  );
+                                                }
+                                              },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            // Bottom: Word Grid
-            Expanded(
-              child: GridView.builder(
-                controller: _gridScrollController,
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 150,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 2.0,
-                ),
-                itemCount: state.words.length,
-                itemBuilder: (context, index) {
-                  final word = state.words[index];
-                  final bool isActive = index == state.currentIndex;
-                  final bool isTapped = index < state.currentIndex;
-
-                  return WordButton(
-                    word: word,
-                    isActive: isActive,
-                    isTapped: isTapped,
-                    playbackSpeed: state.playbackSpeed,
-                    onPointerDown: () {
-                      if (!state.isVerificationMode) {
-                        // We need the current position from the player
-                        // Since AudioController hides the player, we need to add a method to get it
-                        // For now, let's assume we update AudioController or access it via a hack/stream-cache?
-                        // Better: Update AudioController.
-                        // But I can't update another file in this tool call.
-                        // I will temporarily assume I can access it or I will add the method in next step.
-                        // Let's use a workaround: The value isn't read here, we just start the visual.
-                        // The actual assignment happens in the Notifier?
-                        // No, we need to pass the timestamp to the Notifier.
-
-                        // Note: I will update AudioController to expose `currentPosition` in the next step.
-                        // Here I'll call a method that I will add: `audioCtrl.currentPosition`.
-                        final position = audioCtrl.currentPosition;
-                        final updatedWord = word.copyWith(
-                          startTime: position.inMilliseconds,
-                        );
-                        notifier.updateWord(index, updatedWord);
-                      } else {
-                        // Verification Mode: Seek to start
-                        if (word.startTime != null) {
-                          audioCtrl.seek(
-                            Duration(milliseconds: word.startTime!),
-                          );
-                        }
-                      }
-                    },
-                    onPointerUp: () {
-                      if (!state.isVerificationMode && isActive) {
-                        final position = audioCtrl.currentPosition;
-                        final updatedWord = word.copyWith(
-                          endTime: position.inMilliseconds,
-                        );
-                        notifier.updateWord(index, updatedWord);
-                        notifier.nextWord();
-                      }
-                    },
-                  );
-                },
+            // 4. BOTTOM STATUS BAR (Full Width)
+            Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    state.currentVerse.id.toUpperCase(),
+                    style: GoogleFonts.lexend(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const Spacer(),
+                  _buildStatusCounter(
+                    icon: Icons.check_circle_outline,
+                    count: state.currentVerse.syncedWordCount,
+                    total: state.currentVerse.words.length,
+                    label: "words synced",
+                    color: const Color(0xFFB8860B),
+                  ),
+                  const SizedBox(width: 24),
+                  _buildStatusCounter(
+                    icon: Icons.circle_outlined,
+                    count:
+                        state.currentVerse.words.length -
+                        state.currentVerse.syncedWordCount,
+                    total: state.currentVerse.words.length,
+                    label: "remaining",
+                    color: Colors.grey,
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: 120,
+                    child: LinearProgressIndicator(
+                      value: state.currentVerse.words.isEmpty
+                          ? 0
+                          : state.currentVerse.syncedWordCount /
+                                state.currentVerse.words.length,
+                      backgroundColor: Colors.grey.shade100,
+                      valueColor: const AlwaysStoppedAnimation(
+                        Color(0xFF8B1538),
+                      ),
+                      minHeight: 4,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    "40",
+                    style: GoogleFonts.lexend(fontSize: 10, color: Colors.grey),
+                  ),
+                ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  bool _isChained(List<SyncWord> words, int index) {
+    if (index + 1 >= words.length) return false;
+    final w = words[index];
+    final next = words[index + 1];
+    return w.endTime != null &&
+        next.startTime != null &&
+        w.endTime == next.startTime;
+  }
+
+  Widget _buildLegendItem(String label, Color color, {bool isCircle = false}) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: isCircle ? Colors.transparent : color,
+            border: isCircle ? Border.all(color: color, width: 1.5) : null,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: GoogleFonts.lexend(
+            fontSize: 12,
+            color: Colors.grey.shade600,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusCounter({
+    required IconData icon,
+    required int count,
+    required int total,
+    required String label,
+    required Color color,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 6),
+        Text(
+          "$count / $total $label",
+          style: GoogleFonts.lexend(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WordCard extends StatelessWidget {
+  final SyncWord word;
+  final bool isSelected;
+  final bool isSynced;
+  final bool isRecordingActive;
+  final bool isChainedToNext;
+  final VoidCallback? onTap;
+
+  const _WordCard({
+    required this.word,
+    required this.isSelected,
+    required this.isSynced,
+    required this.isRecordingActive,
+    required this.isChainedToNext,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const kCrimson = Color(0xFF8B1538);
+    final borderColor = isRecordingActive
+        ? kCrimson
+        : (isSynced ? const Color(0xFFB8860B) : Colors.transparent);
+    final dotColor = isRecordingActive
+        ? kCrimson
+        : (isSynced ? const Color(0xFFB8860B) : Colors.grey.shade300);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected
+                    ? kCrimson
+                    : (borderColor == Colors.transparent
+                          ? Colors.grey.shade200
+                          : borderColor),
+                width: isSelected || isRecordingActive ? 2 : 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha((255 * 0.04).toInt()),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: dotColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      word.text,
+                      style: GoogleFonts.notoSerifEthiopic(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF2C2C2C),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    isSynced
+                        ? "${((word.endTime! - word.startTime!) / 1000).toStringAsFixed(2)}s"
+                        : "Unsynced",
+                    style: GoogleFonts.lexend(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: isSynced
+                          ? const Color(0xFFB8860B)
+                          : Colors.grey.shade400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isChainedToNext)
+            Positioned(
+              right: -18, // Center between this card and next
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F1E8),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFB8860B),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.link, size: 16, color: Color(0xFFB8860B)),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'services/font_service.dart';
-import 'ui/home_page.dart';
+import 'ui/startup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +27,6 @@ void main() async {
   final fontAvailable = await FontService.isFontAvailable();
   if (!fontAvailable) {
     debugPrint("WARNING: NotoSerifEthiopic font might be missing.");
-    // In a real app we might show a dialog here, but for now just logging.
   }
 
   runApp(const ProviderScope(child: ChronoScriptApp()));
@@ -45,13 +44,13 @@ class ChronoScriptApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'NotoSerifEthiopic',
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF8D6E63), // Brown/Earth tone base
-          surface: const Color(0xFFFDF5E6), // "Old Lace" / Vellum
+          seedColor: const Color(0xFF8D6E63),
+          surface: const Color(0xFFFDF5E6),
           onSurface: Colors.black87,
           primary: const Color(0xFF5D4037),
           secondary: const Color(0xFF795548),
         ),
-        scaffoldBackgroundColor: const Color(0xFFFDF5E6), // Vellum background
+        scaffoldBackgroundColor: const Color(0xFFFDF5E6),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFFFDF5E6),
           elevation: 0,
@@ -64,7 +63,7 @@ class ChronoScriptApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Color(0xFF5D4037)),
         ),
       ),
-      home: const HomePage(),
+      home: const StartupScreen(), // Start with prerequisite check
     );
   }
 }
