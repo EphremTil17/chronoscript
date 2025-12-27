@@ -2,6 +2,14 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/EphremTil17/chronoscript/compare/v1.2.0...v1.3.0) (2025-12-27)
+
+
+### Features
+
+* Add AGPL-3.0 license, changelog, initial home page, and update README. ([ba53f07](https://github.com/EphremTil17/chronoscript/commit/ba53f07afd50961e0839bacd1f59a03b2dad8b00))
+* implement custom title bar, hover states, and word reset functionality ([5782d09](https://github.com/EphremTil17/chronoscript/commit/5782d0903efa432fedb5937368fb31822860bd4d))
+
 ## [1.3.0] - 2025-12-26
 ### Added
 - **Custom Title Bar**: Implemented a native-feel Crimson title bar with integrated window controls (Min/Max/Close) using `window_manager`.
