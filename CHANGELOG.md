@@ -2,6 +2,13 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0](https://github.com/EphremTil17/chronoscript/compare/v1.3.0...v1.4.0) (2025-12-27)
+
+
+### Features
+
+* implement multi-word selection, hotkey guide, and seeking precision ([66d5b5f](https://github.com/EphremTil17/chronoscript/commit/66d5b5f8943c9d95590b2464134d3cb8bac13c5a))
+
 ## [2.0.0] - 2025-12-26
 > **Major Production Milestone**: This release transforms ChronoScript Studio into a hardened production environment, focusing on frame-accurate temporal precision and high-throughput studio workflows.
 
