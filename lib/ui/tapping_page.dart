@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:chronoscript/models/sync_word.dart';
 import 'package:chronoscript/ui/widgets/verse_sidebar.dart';
 import 'package:chronoscript/ui/widgets/liturgy_hub.dart';
+import 'package:chronoscript/ui/widgets/custom_title_bar.dart';
 
 class TappingPage extends ConsumerStatefulWidget {
   const TappingPage({super.key});
@@ -129,6 +130,7 @@ class _TappingPageState extends ConsumerState<TappingPage> {
         backgroundColor: const Color(0xFFF5F1E8),
         body: Column(
           children: [
+            const CustomTitleBar(),
             // MAIN CONTENT AREA (Sidebar + Right Panel)
             Expanded(
               child: Row(
@@ -212,6 +214,8 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                             onSeekForward: () => audioCtrl.seekBackward(
                               const Duration(seconds: -5),
                             ),
+                            onReset: () =>
+                                notifier.resetWord(state.selectedWordIndex),
                           ),
 
                           // 3. Word Grid with Header
@@ -473,101 +477,111 @@ class _WordCard extends StatelessWidget {
         ? kCrimson
         : (isSynced ? const Color(0xFFB8860B) : Colors.grey.shade300);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected
-                    ? kCrimson
-                    : (borderColor == Colors.transparent
-                          ? Colors.grey.shade200
-                          : borderColor),
-                width: isSelected || isRecordingActive ? 2 : 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha((255 * 0.04).toInt()),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        hoverColor: kCrimson.withValues(alpha: 0.1),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? kCrimson
+                      : (borderColor == Colors.transparent
+                            ? Colors.grey.shade200
+                            : borderColor),
+                  width: isSelected || isRecordingActive ? 2 : 1.5,
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: dotColor,
-                        shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: dotColor,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Center(
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        word.text,
+                        style: GoogleFonts.notoSerifEthiopic(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF2C2C2C),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
                     child: Text(
-                      word.text,
-                      style: GoogleFonts.notoSerifEthiopic(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF2C2C2C),
+                      isSynced
+                          ? "${((word.endTime! - word.startTime!) / 1000).toStringAsFixed(2)}s"
+                          : "Unsynced",
+                      style: GoogleFonts.lexend(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: isSynced
+                            ? const Color(0xFFB8860B)
+                            : Colors.grey.shade400,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isChainedToNext)
+              Positioned(
+                right:
+                    -20, // Center between this card (end at 0) and next (start at 20). Center of gap is 10. Center of widget (20/2=10) needs to be at 10. So right edge at 20.
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F1E8),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFB8860B),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.link,
+                        size: 12,
+                        color: Color(0xFFB8860B),
                       ),
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    isSynced
-                        ? "${((word.endTime! - word.startTime!) / 1000).toStringAsFixed(2)}s"
-                        : "Unsynced",
-                    style: GoogleFonts.lexend(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: isSynced
-                          ? const Color(0xFFB8860B)
-                          : Colors.grey.shade400,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isChainedToNext)
-            Positioned(
-              right: -18, // Center between this card and next
-              top: 0,
-              bottom: 0,
-              child: Center(
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F1E8),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFB8860B),
-                      width: 2,
-                    ),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.link, size: 16, color: Color(0xFFB8860B)),
-                  ),
-                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

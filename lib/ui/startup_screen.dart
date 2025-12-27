@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:chronoscript/ui/widgets/custom_title_bar.dart';
 import '../services/prerequisite_service.dart';
 import 'home_page.dart';
 import 'package:logging/logging.dart';
@@ -96,129 +97,137 @@ class _StartupScreenState extends State<StartupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: palePink,
-      body: Center(
-        child: Container(
-          width: 650,
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Logo/Title
-              Row(
-                children: [
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: crimson,
-                      shape: BoxShape.circle,
+      body: Column(
+        children: [
+          const CustomTitleBar(),
+          Expanded(
+            child: Center(
+              child: Container(
+                width: 650,
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Logo/Title
+                    Row(
+                      children: [
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: crimson,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'ChronoScript Studio',
+                          style: GoogleFonts.lexend(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w600,
+                            color: darkGray,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'ChronoScript Studio',
-                    style: GoogleFonts.lexend(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                      color: darkGray,
+                    const SizedBox(height: 24),
+
+                    // Log Display - Light background with crimson border
+                    Container(
+                      height: 380,
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: logBackground,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: crimson, width: 2),
+                      ),
+                      child: ListView.builder(
+                        itemCount: _logs.length,
+                        itemBuilder: (context, index) {
+                          final log = _logs[index];
+
+                          // Default: dark gray text
+                          Color textColor = darkGray;
+                          FontWeight fontWeight = FontWeight.normal;
+
+                          // Highlights in crimson
+                          if (log.contains('not found') ||
+                              log.contains('REQUIRED') ||
+                              log.contains('INSTALLATION') ||
+                              log.contains('AFTER INSTALLATION') ||
+                              log.contains('MANUAL ALTERNATIVE')) {
+                            textColor = crimson;
+                            fontWeight = FontWeight.w600;
+                          } else if (log.contains('✓') ||
+                              log.contains('Ready')) {
+                            textColor = crimson;
+                            fontWeight = FontWeight.w600;
+                          }
+
+                          return SelectableText(
+                            log,
+                            style: GoogleFonts.firaCode(
+                              fontSize: 11,
+                              color: textColor,
+                              height: 1.5,
+                              fontWeight: fontWeight,
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+
+                    // Status/Action
+                    if (_ffmpegMissing)
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _logs.clear();
+                              _ffmpegMissing = false;
+                            });
+                            _runStartupChecks();
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: crimson,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            'Retry Check',
+                            style: GoogleFonts.lexend(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (!_ready)
+                      Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: crimson,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 24),
-
-              // Log Display - Light background with crimson border
-              Container(
-                height: 380,
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: logBackground,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: crimson, width: 2),
-                ),
-                child: ListView.builder(
-                  itemCount: _logs.length,
-                  itemBuilder: (context, index) {
-                    final log = _logs[index];
-
-                    // Default: dark gray text
-                    Color textColor = darkGray;
-                    FontWeight fontWeight = FontWeight.normal;
-
-                    // Highlights in crimson
-                    if (log.contains('not found') ||
-                        log.contains('REQUIRED') ||
-                        log.contains('INSTALLATION') ||
-                        log.contains('AFTER INSTALLATION') ||
-                        log.contains('MANUAL ALTERNATIVE')) {
-                      textColor = crimson;
-                      fontWeight = FontWeight.w600;
-                    } else if (log.contains('✓') || log.contains('Ready')) {
-                      textColor = const Color(0xFF2E7D32); // Green for success
-                      fontWeight = FontWeight.w600;
-                    }
-
-                    return SelectableText(
-                      log,
-                      style: GoogleFonts.firaCode(
-                        fontSize: 11,
-                        color: textColor,
-                        height: 1.5,
-                        fontWeight: fontWeight,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Status/Action
-              if (_ffmpegMissing)
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _logs.clear();
-                        _ffmpegMissing = false;
-                      });
-                      _runStartupChecks();
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor: crimson,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'Retry Check',
-                      style: GoogleFonts.lexend(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                )
-              else if (!_ready)
-                Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: crimson,
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

@@ -60,8 +60,9 @@ The application requires FFmpeg to be installed and accessible via the system PA
 2. **Ingestion**: Upload the raw source text (`.txt` or `.md`) and the corresponding audio file (`.mp3` or `.wav`).
 3. **Synchronization**:
    - Use the Play button to start audio playback.
-   - Click the "START" button to mark the beginning of a word.
-   - Use the "CHAIN" button or designated shortcuts to concurrently end the current word and start the next.
+   - Click the "**TRANSCRIBE**" button to mark the beginning of a word.
+   - Use the "**CHAIN**" button or designated shortcuts to concurrently end the current word and start the next.
+   - Use the "**Reset Word**" button to clear synchronization data for the selected word if corrections are needed.
 4. **Verification**: Scrub through the optimized waveform to verify word placements. Individual word cards will highlight in alignment with the audio playhead.
 5. **Export**: Data is exported in a structured JSON format containing time-aligned textual segments and word objects.
 

@@ -2,6 +2,19 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-12-26
+### Added
+- **Custom Title Bar**: Implemented a native-feel Crimson title bar with integrated window controls (Min/Max/Close) using `window_manager`.
+- **Reset Word**: Added a "Reset Word" action in the control hub to clear timing data for specific words.
+- **Enhanced Hover Effects**: Implemented system-wide interactive feedback for buttons, word cards, and sidebar items using `InkWell` and `Material` composites.
+
+### Changed
+- **UI Refinement**: Renamed the "START" recording action to "TRANSCRIBE" for improved clarity.
+- **Layout Stability**: Fixed width constraints for recording controls to prevent UI jitter during state transitions.
+- **Visual Polish**: Adjusted color palettes for consistent branding across success indicators and highlights.
+- **Hover Logic**: Refactored widget layering to ensure hover overlays are correctly painted over opaque backgrounds.
+- **Documentation**: Updated `README.md` usage instructions to align with new UI labels.
+
 ## [1.2.0] - 2025-12-26 [dbc1aeb]
 ### Added
 - **FFmpeg Integration**: Introduced `FfmpegWaveformService` and `PrerequisiteService` to replace `just_waveform`. This enables high-performance peak extraction (4kHz sampling, 200-peak fixed resolution).

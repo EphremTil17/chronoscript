@@ -31,9 +31,9 @@ class VerseSidebar extends StatelessWidget {
             child: Text(
               "VERSES",
               style: GoogleFonts.lexend(
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2.5,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.5,
                 color: kCrimson,
               ),
             ),
@@ -59,43 +59,44 @@ class VerseSidebar extends StatelessWidget {
                   } catch (_) {}
                 }
 
-                return InkWell(
-                  onTap: isLocked ? null : () => onVerseSelected(idx),
-                  child: Container(
-                    height: 52,
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    decoration: BoxDecoration(
-                      color: isSelected ? Colors.white : Colors.transparent,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          displayId,
-                          style: GoogleFonts.lexend(
-                            fontSize: 14,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected ? kCrimson : Colors.black87,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (isSelected)
+                return Material(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  child: InkWell(
+                    onTap: isLocked ? null : () => onVerseSelected(idx),
+                    hoverColor: kCrimson.withValues(alpha: 0.1),
+                    child: Container(
+                      height: 52,
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        children: [
                           Text(
-                            "${(progress * 100).toInt()}%",
+                            displayId,
                             style: GoogleFonts.lexend(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: kCrimson.withAlpha((255 * 0.6).toInt()),
+                              fontSize: 14,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected ? kCrimson : Colors.black87,
                             ),
-                          )
-                        else
-                          Icon(
-                            Icons.chevron_right,
-                            size: 14,
-                            color: Colors.grey.withAlpha((255 * 0.4).toInt()),
                           ),
-                      ],
+                          const Spacer(),
+                          if (isSelected)
+                            Text(
+                              "${(progress * 100).toInt()}%",
+                              style: GoogleFonts.lexend(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: kCrimson.withAlpha((255 * 0.6).toInt()),
+                              ),
+                            )
+                          else
+                            Icon(
+                              Icons.chevron_right,
+                              size: 14,
+                              color: Colors.grey.withAlpha((255 * 0.4).toInt()),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 );

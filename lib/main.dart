@@ -9,13 +9,13 @@ void main() async {
 
   // Desktop Window Configuration
   await windowManager.ensureInitialized();
-  WindowOptions windowOptions = const WindowOptions(
+  WindowOptions windowOptions = WindowOptions(
     size: Size(1280, 800),
     minimumSize: Size(1024, 768),
     center: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: const Color(0xFF8B1538),
     skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.normal,
+    titleBarStyle: TitleBarStyle.hidden,
     title: 'ChronoScript Studio',
   );
   await windowManager.waitUntilReadyToShow(windowOptions, () async {

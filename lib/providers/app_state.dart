@@ -195,6 +195,22 @@ class TappingNotifier extends StateNotifier<TappingState> {
       state = state.copyWith(selectedWordIndex: state.selectedWordIndex - 1);
     }
   }
+
+  void resetWord(int index) {
+    if (state.isRecording) return; // Prevent reset during recording
+    if (index < 0 || index >= state.currentWords.length) return;
+
+    final word = state.currentWords[index];
+    final resetWord = SyncWord(
+      id: word.id,
+      text: word.text,
+      startTime: null,
+      endTime: null,
+      isParagraphStart: word.isParagraphStart,
+    );
+
+    _updateWordAtIndex(index, resetWord);
+  }
 }
 
 final tappingProvider = StateNotifierProvider<TappingNotifier, TappingState>((

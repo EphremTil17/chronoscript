@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:chronoscript/ui/widgets/custom_title_bar.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:chronoscript/services/ingestion_service.dart';
@@ -81,124 +82,139 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kPaper,
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 800),
-          padding: const EdgeInsets.symmetric(horizontal: 40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo/Icon
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: kCrimson, width: 2),
-                ),
-                child: Icon(Icons.auto_stories, size: 64, color: kCrimson),
-              ),
-              const SizedBox(height: 32),
-
-              // Title
-              Text(
-                "ChronoScript Studio",
-                style: GoogleFonts.lexend(
-                  fontSize: 40,
-                  fontWeight: FontWeight.w800,
-                  color: kCrimson,
-                  letterSpacing: -1,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Description
-              Text(
-                "Professional Liturgy Studio for precise audio-text synchronization",
-                style: GoogleFonts.lexend(
-                  fontSize: 16,
-                  color: Colors.black54,
-                  fontWeight: FontWeight.w400,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 60),
-
-              // Upload Slots
-              Row(
-                children: [
-                  Expanded(
-                    child: _UploadCard(
-                      label: "Scripture Text",
-                      icon: Icons.description_outlined,
-                      filePath: _textPath,
-                      onTap: _pickText,
+      body: Column(
+        children: [
+          const CustomTitleBar(),
+          Expanded(
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 800),
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo/Icon
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: kCrimson, width: 2),
+                      ),
+                      child: Icon(
+                        Icons.auto_stories,
+                        size: 64,
+                        color: kCrimson,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: _UploadCard(
-                      label: "Audio Session (WAV)",
-                      icon: Icons.audiotrack_outlined,
-                      filePath: _audioPath,
-                      onTap: _pickAudio,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 60),
+                    const SizedBox(height: 32),
 
-              // Initialize Button
-              SizedBox(
-                width: 300,
-                height: 56,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kCrimson,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: kCrimson.withAlpha(
-                      (255 * 0.1).toInt(),
+                    // Title
+                    Text(
+                      "ChronoScript Studio",
+                      style: GoogleFonts.lexend(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w800,
+                        color: kCrimson,
+                        letterSpacing: -1,
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 12),
+
+                    // Description
+                    Text(
+                      "Professional Liturgy Studio for precise audio-text synchronization",
+                      style: GoogleFonts.lexend(
+                        fontSize: 16,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    elevation: 0,
-                  ),
-                  onPressed:
-                      (_textPath != null && _audioPath != null && !_isLoading)
-                      ? _initializeStudio
-                      : null,
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          "INITIALIZE STUDIO",
-                          style: GoogleFonts.lexend(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
+                    const SizedBox(height: 60),
+
+                    // Upload Slots
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _UploadCard(
+                            label: "Scripture Text",
+                            icon: Icons.description_outlined,
+                            filePath: _textPath,
+                            onTap: _pickText,
                           ),
                         ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: _UploadCard(
+                            label: "Audio Session (WAV)",
+                            icon: Icons.audiotrack_outlined,
+                            filePath: _audioPath,
+                            onTap: _pickAudio,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 60),
+
+                    // Initialize Button
+                    SizedBox(
+                      width: 300,
+                      height: 56,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kCrimson,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: kCrimson.withAlpha(
+                            (255 * 0.1).toInt(),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed:
+                            (_textPath != null &&
+                                _audioPath != null &&
+                                !_isLoading)
+                            ? _initializeStudio
+                            : null,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                "INITIALIZE STUDIO",
+                                style: GoogleFonts.lexend(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_textPath != null && _audioPath != null)
+                      Text(
+                        "All systems ready.",
+                        style: GoogleFonts.lexend(
+                          fontSize: 12,
+                          color: kCrimson,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
-              if (_textPath != null && _audioPath != null)
-                Text(
-                  "All systems ready.",
-                  style: GoogleFonts.lexend(
-                    fontSize: 12,
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -222,60 +238,57 @@ class _UploadCard extends StatelessWidget {
     final isLoaded = filePath != null;
     final crimson = const Color(0xFF8B1538);
 
-    return InkWell(
-      onTap: onTap,
+    return Material(
+      color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      child: Container(
-        height: 140,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isLoaded
-                ? Colors.green
-                : crimson.withAlpha((255 * 0.3).toInt()),
-            width: isLoaded ? 2 : 1,
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.1),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        hoverColor: crimson.withValues(alpha: 0.1),
+        child: Container(
+          height: 140,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isLoaded ? crimson : crimson.withValues(alpha: 0.3),
+              width: isLoaded ? 2 : 1,
+            ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha((255 * 0.03).toInt()),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isLoaded ? Icons.check_circle : icon,
-              size: 32,
-              color: isLoaded ? Colors.green : crimson,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isLoaded ? (filePath!.split('\\').last.split('/').last) : label,
-              style: GoogleFonts.lexend(
-                fontSize: 13,
-                fontWeight: isLoaded ? FontWeight.w600 : FontWeight.w500,
-                color: isLoaded ? Colors.green.shade700 : Colors.black87,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isLoaded ? Icons.check_circle : icon,
+                size: 32,
+                color: crimson,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (!isLoaded)
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Text(
-                  "Click to upload",
-                  style: GoogleFonts.lexend(
-                    fontSize: 10,
-                    color: Colors.black38,
+              const SizedBox(height: 16),
+              Text(
+                isLoaded ? (filePath!.split('\\').last.split('/').last) : label,
+                style: GoogleFonts.lexend(
+                  fontSize: 13,
+                  fontWeight: isLoaded ? FontWeight.w600 : FontWeight.w500,
+                  color: isLoaded ? crimson : Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (!isLoaded)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    "Click to upload",
+                    style: GoogleFonts.lexend(
+                      fontSize: 10,
+                      color: Colors.black38,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -14,6 +14,7 @@ class LiturgyControlHub extends ConsumerStatefulWidget {
   final VoidCallback onTogglePlay;
   final VoidCallback onSeekBackward;
   final VoidCallback onSeekForward;
+  final VoidCallback onReset;
 
   const LiturgyControlHub({
     super.key,
@@ -25,6 +26,7 @@ class LiturgyControlHub extends ConsumerStatefulWidget {
     required this.onTogglePlay,
     required this.onSeekBackward,
     required this.onSeekForward,
+    required this.onReset,
   });
 
   @override
@@ -94,8 +96,20 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
                   const SizedBox(width: 4),
                   _buildSeekButton(Icons.forward_5, widget.onSeekForward),
                   const SizedBox(width: 12),
-                  // Start/Chain Button
-                  _buildStartButton(isRecording: isRecording),
+                  // Start/Chain Button Area - Fixed Width to prevent jitter
+                  SizedBox(
+                    width: 135,
+                    child: isRecording
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              _buildStopButton(),
+                              const SizedBox(width: 8),
+                              _buildChainButton(),
+                            ],
+                          )
+                        : _buildStartButton(),
+                  ),
                 ],
               ),
 
@@ -124,80 +138,189 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
   }
 
   Widget _buildPlayButton(Color color) {
-    return GestureDetector(
-      onTap: widget.onTogglePlay,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        child: Icon(
-          widget.state.isPlaying ? Icons.pause : Icons.play_arrow,
-          color: Colors.white,
-          size: 26,
+    return Material(
+      color: color,
+      shape: const CircleBorder(),
+      elevation: 2,
+      child: InkWell(
+        onTap: widget.onTogglePlay,
+        customBorder: const CircleBorder(),
+        hoverColor: Colors.white.withValues(alpha: 0.2),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(
+            widget.state.isPlaying ? Icons.pause : Icons.play_arrow,
+            color: Colors.white,
+            size: 26,
+          ),
         ),
       ),
     );
   }
 
   Widget _buildSeekButton(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade300),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        hoverColor: Colors.grey.shade100,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Icon(icon, size: 18, color: Colors.black54),
         ),
-        child: Icon(icon, size: 18, color: Colors.black54),
       ),
     );
   }
 
-  Widget _buildStartButton({required bool isRecording}) {
+  Widget _buildStartButton() {
     const kCrimson = Color(0xFF8B1538);
-    return GestureDetector(
-      onTap: isRecording ? widget.onChain : widget.onStart,
-      child: Container(
-        height: 34,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: kCrimson,
-          borderRadius: BorderRadius.circular(17),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Icon: dot for START, chain for CHAIN
-            isRecording
-                ? const Icon(Icons.link, color: Colors.white, size: 16)
-                : Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-            const SizedBox(width: 6),
-            Text(
-              isRecording ? "CHAIN" : "START",
-              style: GoogleFonts.lexend(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-                letterSpacing: 0.8,
+    return Material(
+      color: kCrimson,
+      borderRadius: BorderRadius.circular(17),
+      elevation: 2,
+      child: InkWell(
+        onTap: widget.onStart,
+        borderRadius: BorderRadius.circular(17),
+        hoverColor: Colors.white.withValues(alpha: 0.15),
+        child: Container(
+          height: 34,
+          width: 135,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(17)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                "TRANSCRIBE",
+                style: GoogleFonts.lexend(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStopButton() {
+    const kCrimson = Color(0xFF8B1538);
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(8),
+      elevation: 2,
+      child: InkWell(
+        onTap: widget.onEnd,
+        borderRadius: BorderRadius.circular(8),
+        hoverColor: kCrimson.withValues(alpha: 0.1),
+        child: Container(
+          height: 34,
+          width: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: kCrimson, width: 1.5),
+          ),
+          child: const Icon(Icons.stop, color: kCrimson, size: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChainButton() {
+    const kCrimson = Color(0xFF8B1538);
+    return Material(
+      color: kCrimson,
+      borderRadius: BorderRadius.circular(17),
+      elevation: 2,
+      child: InkWell(
+        onTap: widget.onChain,
+        borderRadius: BorderRadius.circular(17),
+        hoverColor: Colors.white.withValues(alpha: 0.15),
+        child: Container(
+          height: 34,
+          width: 83, // 135 total - 44 stop - 8 gap = 83
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(17)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.link, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                "CHAIN",
+                style: GoogleFonts.lexend(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildSpeedSelector() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildSpeedDropdown(),
+        const SizedBox(width: 16),
+        // Reset Button
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onReset,
+            borderRadius: BorderRadius.circular(14),
+            hoverColor: const Color(0xFF8B1538).withValues(alpha: 0.05),
+            child: Container(
+              height: 28,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.refresh, size: 14, color: Colors.grey.shade700),
+                  const SizedBox(width: 6),
+                  Text(
+                    "Reset Word",
+                    style: GoogleFonts.lexend(
+                      fontSize: 11,
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpeedDropdown() {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
