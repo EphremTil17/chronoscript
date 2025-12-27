@@ -2,6 +2,16 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.0 (2025-12-27)
+
+
+### Features
+
+* Add AGPL-3.0 license, changelog, initial home page, and update README. ([ba53f07](https://github.com/EphremTil17/chronoscript/commit/ba53f07afd50961e0839bacd1f59a03b2dad8b00))
+* implement auto-save system and finalize verification workflow ([6e5ab2c](https://github.com/EphremTil17/chronoscript/commit/6e5ab2c38b8f2e254b4eda9ad344f49041d12503))
+* Implement FFmpeg-based waveform extraction and prerequisite system. ([dbc1aeb](https://github.com/EphremTil17/chronoscript/commit/dbc1aeb7c3b3a8b284f11851dbfbb5f85daf3817))
+* initial implementation of ChronoScript Studio ([5ff7694](https://github.com/EphremTil17/chronoscript/commit/5ff76941aa652cabd7493996a223b5907b2463ff))
+
 ## [1.2.0] - 2025-12-26 [dbc1aeb]
 ### Added
 - **FFmpeg Integration**: Introduced `FfmpegWaveformService` and `PrerequisiteService` to replace `just_waveform`. This enables high-performance peak extraction (4kHz sampling, 200-peak fixed resolution).
