@@ -214,8 +214,7 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                             onSeekForward: () => audioCtrl.seekBackward(
                               const Duration(seconds: -5),
                             ),
-                            onReset: () =>
-                                notifier.resetWord(state.selectedWordIndex),
+                            onReset: () => notifier.resetSelectedWords(),
                           ),
 
                           // 3. Word Grid with Header
@@ -286,8 +285,8 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                                       final word = currentVerseWords[index];
                                       return _WordCard(
                                         word: word,
-                                        isSelected:
-                                            index == state.selectedWordIndex,
+                                        isSelected: state.selectedWordIndices
+                                            .contains(index),
                                         isSynced:
                                             word.startTime != null &&
                                             word.endTime != null,
@@ -301,9 +300,25 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                                         onTap: isGridSelectionLocked
                                             ? null
                                             : () {
-                                                notifier.selectWord(index);
+                                                notifier.handleWordTap(
+                                                  index,
+                                                  isControlPressed:
+                                                      HardwareKeyboard
+                                                          .instance
+                                                          .isControlPressed,
+                                                  isShiftPressed:
+                                                      HardwareKeyboard
+                                                          .instance
+                                                          .isShiftPressed,
+                                                );
                                                 if (word.startTime != null &&
-                                                    !state.isRecording) {
+                                                    !state.isRecording &&
+                                                    !HardwareKeyboard
+                                                        .instance
+                                                        .isControlPressed &&
+                                                    !HardwareKeyboard
+                                                        .instance
+                                                        .isShiftPressed) {
                                                   audioCtrl.seek(
                                                     Duration(
                                                       milliseconds:
@@ -383,11 +398,102 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                     "40",
                     style: GoogleFonts.lexend(fontSize: 10, color: Colors.grey),
                   ),
+                  const SizedBox(width: 16),
+                  // Keyboard Shortcuts Icon
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showShortcutsDialog(context),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          Icons.keyboard,
+                          size: 18,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showShortcutsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFFDF5E6),
+        title: Row(
+          children: [
+            const Icon(Icons.keyboard, color: Color(0xFF8B1538)),
+            const SizedBox(width: 12),
+            Text(
+              "Keyboard Shortcuts",
+              style: GoogleFonts.lexend(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildShortcutRow("Space", "Start/Chain Transcription"),
+            _buildShortcutRow("Enter", "End Word Transcription"),
+            _buildShortcutRow("P", "Play / Pause Audio"),
+            _buildShortcutRow("Left Arrow", "Rewind 5 Seconds"),
+            _buildShortcutRow("Right Arrow", "Forward 5 Seconds"),
+            const Divider(height: 32),
+            _buildShortcutRow("Ctrl + Click", "Multi-Select Words"),
+            _buildShortcutRow("Shift + Click", "Select Range of Words"),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Got it",
+              style: GoogleFonts.lexend(color: const Color(0xFF8B1538)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShortcutRow(String key, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.grey.shade400),
+            ),
+            child: Text(
+              key,
+              style: GoogleFonts.firaCode(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              description,
+              style: GoogleFonts.lexend(fontSize: 13, color: Colors.black87),
+            ),
+          ),
+        ],
       ),
     );
   }

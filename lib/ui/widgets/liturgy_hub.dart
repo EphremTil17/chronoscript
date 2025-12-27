@@ -53,6 +53,7 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
     setState(() => _speed = speed);
     final audioCtrl = ref.read(audioControllerProvider);
     audioCtrl.setSpeed(speed);
+    ref.read(tappingProvider.notifier).setSpeed(speed);
   }
 
   @override
@@ -181,40 +182,48 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
 
   Widget _buildStartButton() {
     const kCrimson = Color(0xFF8B1538);
-    return Material(
-      color: kCrimson,
-      borderRadius: BorderRadius.circular(17),
-      elevation: 2,
-      child: InkWell(
-        onTap: widget.onStart,
+    final isMultiSelect = widget.state.selectedWordIndices.length > 1;
+    final color = isMultiSelect ? Colors.grey.shade400 : kCrimson;
+
+    return Tooltip(
+      message: isMultiSelect
+          ? "Transcription disabled during multi-selection"
+          : "",
+      child: Material(
+        color: color,
         borderRadius: BorderRadius.circular(17),
-        hoverColor: Colors.white.withValues(alpha: 0.15),
-        child: Container(
-          height: 34,
-          width: 135,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(17)),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
+        elevation: isMultiSelect ? 0 : 2,
+        child: InkWell(
+          onTap: isMultiSelect ? null : widget.onStart,
+          borderRadius: BorderRadius.circular(17),
+          hoverColor: Colors.white.withValues(alpha: 0.15),
+          child: Container(
+            height: 34,
+            width: 135,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(17)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: isMultiSelect ? Colors.white70 : Colors.white,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "TRANSCRIBE",
-                style: GoogleFonts.lexend(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                  letterSpacing: 0.5,
+                const SizedBox(width: 8),
+                Text(
+                  "TRANSCRIBE",
+                  style: GoogleFonts.lexend(
+                    color: isMultiSelect ? Colors.white70 : Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -280,6 +289,11 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
   }
 
   Widget _buildSpeedSelector() {
+    final selectionCount = widget.state.selectedWordIndices.length;
+    final resetLabel = selectionCount > 1
+        ? "Reset ($selectionCount)"
+        : "Reset Word";
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -304,7 +318,7 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
                   Icon(Icons.refresh, size: 14, color: Colors.grey.shade700),
                   const SizedBox(width: 6),
                   Text(
-                    "Reset Word",
+                    resetLabel,
                     style: GoogleFonts.lexend(
                       fontSize: 11,
                       color: Colors.grey.shade700,

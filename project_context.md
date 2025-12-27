@@ -34,7 +34,7 @@ The project prioritizes **Leanness, Performance, and Determinism**. We build pro
 ### GitHub Automation & Release Workflow
 - **Naming Convention**: Use **Conventional Commits** (`feat:`, `fix:`, `chore:`, `refactor:`) to drive automation.
 - **Release-Please**: We use `googleapis/release-please-action` for automated versioning and changelogs.
-- **Bootstrapping**: The repo is baseline-tagged at `v1.2.0`. Future versions follow Semantic Versioning (SemVer).
+- **Bootstrapping**: The repo is baseline-tagged at `v2.0.0`. Future versions follow Semantic Versioning (SemVer).
 - **Permissions**: Ensure "Allow GitHub Actions to create and approve pull requests" is enabled in repo settings.
 
 ### Project Context Map
@@ -48,6 +48,7 @@ The project prioritizes **Leanness, Performance, and Determinism**. We build pro
 - **v1.1.0**: Auto-save system; verification workflow; lifecycle management.
 - **v1.1.1**: Ethiopic typography integration; massive linter cleanup.
 - **v1.2.0**: FFmpeg migration; UI refactor; structured logging implementation.
+- **v2.0.0**: Major Production Release; Frame-accurate seeking; Windows-style multi-selection; Hotkey interface; Dependency upgrade (SoLoud v3).
 
 ## 5. Future Roadmap
 1. **Multi-File Batching**: Managing multiple audio assets in a unified studio session.

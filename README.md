@@ -19,23 +19,22 @@ The application features a custom-built waveform extraction system that utilizes
 To handle the fast pace of spoken content, the studio implements a "Chain-Sync" logic. This allows the operator to mark the end of one word and the start of the next with a single interaction, ensuring zero-gap transitions and maintaining a continuous synchronous flow.
 
 ### Desktop-First Architecture
-Designed as a dedicated Windows application using Flutter, ChronoScript Studio leverages system-level window management for a premium production feel, supporting large-screen layouts and high-resolution typography specialized for Ethiopic and other complex scripts.
+Designed as a dedicated Windows application using Flutter, ChronoScript Studio leverages system-level window management for a premium production feel, supporting large-screen layouts and high-resolution typography specialized for Ethiopic and other complex scripts. The **"Crimson & Parchment"** design system was developed specifically to provide a high-contrast, low-fatigue environment for long-form transcription sessions.
 
 ## Technical Specifications
 
-### Tech Stack
-- **Framework**: Flutter (Desktop/Windows)
-- **State Management**: Riverpod (StateNotifier)
-- **Audio Engine**: flutter_soloud (C++ backed audio playback)
-- **Process Management**: FFmpeg (External peak extraction)
-- **Typography**: Lexend and Noto Serif Ethiopic (Variable weight support)
+### Tech Stack & Rationale
+- **Framework**: Flutter (Desktop/Windows) — *Selected for its 60FPS rendering performance and native x64 compilation.*
+- **State Management**: Riverpod (StateNotifier) — *Enables a reactive, unidirectional data flow that keeps the playback timer and UI word cards in perfect synchronization.*
+- **Audio Engine**: flutter_soloud (C++) — *Utilized for its low-level memory-mapped decoding, ensuring frame-accurate seeking at any playback speed.*
+- **Process Management**: FFmpeg — *The industrial standard for media analysis, used here for high-speed, asynchronous waveform peak extraction.*
+- **Typography**: Lexend and Noto Serif Ethiopic — *Chosen for their specialized optical kerning and superior ligature rendering for complex scripts.*
 
-### Core Dependencies
-- `flutter_riverpod`: Reactive state management for high-frequency UI updates.
-- `flutter_soloud`: Low-latency audio playback and duration management.
-- `path_provider`: Secure local caching of generated waveform peaks.
-- `google_fonts`: Dynamic typography injection for professional aesthetics.
-- `window_manager`: Desktop-native window controls and sizing.
+### Key Infrastructure
+- `flutter_riverpod`: Handles the high-frequency state updates required for real-time playhead tracking.
+- `flutter_soloud`: Powers the high-performance audio scrubbing and speed-neutralization seeking logic.
+- `path_provider`: Manages the secure local caching of generated waveform datasets.
+- `window_manager`: Handles native Windows window lifecycle and the custom integrated title bar.
 
 ## Prerequisites
 

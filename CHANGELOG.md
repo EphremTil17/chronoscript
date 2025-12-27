@@ -2,6 +2,28 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-12-26
+> **Major Production Milestone**: This release transforms ChronoScript Studio into a hardened production environment, focusing on frame-accurate temporal precision and high-throughput studio workflows.
+
+### Added
+- **Frame-Accurate Seeking Fix**: 
+    - Resolved a critical engine-level seeking mismatch caused by internal scaling math during variable-speed playback.
+    - Implemented **"Speed-Neutralization"**: a logic sandwich that temporarily resets play speed to 1.0x during seeks to ensure bit-perfect landing on absolute media timestamps.
+    - Enforced `LoadMode.memory` for all audio ingestion to provide stable performance on Windows and eliminate compressed bitrate estimation jitters.
+- **Multi-Word Selection System**:
+    - Implemented industry-standard selection logic: `Ctrl+Click` for individual toggles and `Shift+Click` for range selection.
+    - Refactored state management to utilize a highly efficient Set-based indexing for multi-selection.
+    - Integrated a **"Reset (N)"** batch action, allowing operators to clear timestamps for a selected group of words in a single click.
+    - **Logic Lock**: The "TRANSCRIBE" button now intelligently disables during multi-selection to prevent conflicting timing cues.
+- **Hotkey Reference & Accessibility**:
+    - Added a permanent keyboard icon to the status bar providing an on-demand reference for professional hotkeys (Space, Enter, P, and Arrows).
+    - Standardized "Undo" and navigation shortcuts to align with professional production audio suites.
+
+### Changed
+- **Infrastructure Overhaul**: Upgraded `flutter_soloud` (v3.x), `window_manager` (v0.5.x), and `file_picker` (v10.x) to their latest major versions for enhanced Windows stability.
+- **Design System Unification**: Fully unified the **"Crimson & Parchment"** visual theme across all entry screens and modernized the `README.md` with technical architecture rationales.
+- **Technical Documentation**: Formalized the design system logic and technical pillars in the project documentation.
+
 ## [1.3.0] - 2025-12-26
 ### Added
 - **Custom Title Bar**: Implemented a native-feel Crimson title bar with integrated window controls (Min/Max/Close) using `window_manager`.
