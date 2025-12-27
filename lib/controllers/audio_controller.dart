@@ -19,6 +19,8 @@ class AudioController {
   final _waveformController = StreamController<List<double>?>.broadcast();
   final _logController = StreamController<String>.broadcast();
   final _ffmpegErrorController = StreamController<String>.broadcast();
+  double _playbackSpeed = 1.0;
+  double get playbackSpeed => _playbackSpeed;
 
   // Expose streams
   Stream<Duration> get positionStream => _positionController.stream;
@@ -104,8 +106,11 @@ class AudioController {
         _logger.info("Created temp file at: $pathPayload");
       }
 
-      _currentSource = await SoLoud.instance.loadFile(pathPayload);
-      _logger.info("Source loaded. Getting length...");
+      _currentSource = await SoLoud.instance.loadFile(
+        pathPayload,
+        mode: LoadMode.memory,
+      );
+      _logger.info("Source loaded in memory mode. Getting length...");
       _totalDuration = SoLoud.instance.getLength(_currentSource!);
       _logger.info("Audio loaded successfully. Duration: $_totalDuration");
 
@@ -160,8 +165,19 @@ class AudioController {
       SoLoud.instance.setPause(_currentHandle!, false);
     } else {
       _currentHandle = await SoLoud.instance.play(_currentSource!);
+      // Ensure speed is applied to the new handle immediately
+      SoLoud.instance.setRelativePlaySpeed(_currentHandle!, _playbackSpeed);
+
       if (_currentPosition > Duration.zero) {
+        // Apply speed toggle trick for play+stored seek
+        final savedSpeed = _playbackSpeed;
+        if (savedSpeed != 1.0) {
+          SoLoud.instance.setRelativePlaySpeed(_currentHandle!, 1.0);
+        }
         SoLoud.instance.seek(_currentHandle!, _currentPosition);
+        if (savedSpeed != 1.0) {
+          SoLoud.instance.setRelativePlaySpeed(_currentHandle!, savedSpeed);
+        }
       }
     }
     _startPositionTimer();
@@ -176,6 +192,7 @@ class AudioController {
   }
 
   Future<void> setSpeed(double speed) async {
+    _playbackSpeed = speed;
     if (_currentHandle != null &&
         SoLoud.instance.getIsValidVoiceHandle(_currentHandle!)) {
       SoLoud.instance.setRelativePlaySpeed(_currentHandle!, speed);
@@ -186,7 +203,18 @@ class AudioController {
     _currentPosition = position;
     if (_currentHandle != null &&
         SoLoud.instance.getIsValidVoiceHandle(_currentHandle!)) {
+      // Speed Toggle Workaround for accurate seeking
+      final savedSpeed = _playbackSpeed;
+      if (savedSpeed != 1.0) {
+        SoLoud.instance.setRelativePlaySpeed(_currentHandle!, 1.0);
+      }
+
+      _logger.info("Seeking to $position (Media Time) at speed $savedSpeed");
       SoLoud.instance.seek(_currentHandle!, position);
+
+      if (savedSpeed != 1.0) {
+        SoLoud.instance.setRelativePlaySpeed(_currentHandle!, savedSpeed);
+      }
     }
     _positionController.add(position);
   }

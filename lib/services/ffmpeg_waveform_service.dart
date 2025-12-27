@@ -12,7 +12,7 @@ class FfmpegWaveformService {
   final void Function(String message)? onLog;
 
   // Target number of peaks for visualization - keep this small for performance
-  static const int targetPeakCount = 200;
+  static const int targetPeakCount = 400;
 
   FfmpegWaveformService({this.onLog});
 
@@ -37,7 +37,14 @@ class FfmpegWaveformService {
         final content = await cacheFile.readAsString();
         final List<dynamic> data = jsonDecode(content);
         _log("Loaded ${data.length} peaks from cache");
-        return data.map((e) => (e as num).toDouble()).toList();
+
+        // Ensure cache matches current target count
+        if (data.length == targetPeakCount) {
+          return data.map((e) => (e as num).toDouble()).toList();
+        }
+        _log(
+          "Cache mismatch (${data.length} != $targetPeakCount), re-extracting...",
+        );
       } catch (_) {
         // Re-extract if cache is corrupted
       }
@@ -70,7 +77,7 @@ class FfmpegWaveformService {
 
   Future<List<double>> _runFfmpeg(String audioPath) async {
     // Use low sample rate for fast processing
-    // 4kHz * 30min = 7.2M samples, divided into 200 peaks = 36k samples/peak
+    // 4kHz * 30min = 7.2M samples, divided into peaks
     final result = await Process.run('ffmpeg', [
       '-i', audioPath,
       '-ac', '1', // Mono

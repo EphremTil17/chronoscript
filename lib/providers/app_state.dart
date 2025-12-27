@@ -14,10 +14,13 @@ class TappingState {
       : const Verse(id: 'empty', words: []);
   List<SyncWord> get currentWords => currentVerse.words;
 
-  // Selection & Recording
-  final int selectedWordIndex; // The word currently highlighted (Blue Border)
+  final Set<int> selectedWordIndices; // Multi-selection support
   final int?
   recordingWordIndex; // The word pending an END timestamp (Red state)
+
+  // Backward compatibility helper
+  int get selectedWordIndex =>
+      selectedWordIndices.isNotEmpty ? selectedWordIndices.last : 0;
 
   final bool isPlaying;
   final double playbackSpeed;
@@ -28,7 +31,7 @@ class TappingState {
   const TappingState({
     this.verses = const [],
     this.selectedVerseIndex = 0,
-    this.selectedWordIndex = 0,
+    this.selectedWordIndices = const {0},
     this.recordingWordIndex,
     this.isPlaying = false,
     this.playbackSpeed = 1.0,
@@ -38,7 +41,7 @@ class TappingState {
   TappingState copyWith({
     List<Verse>? verses,
     int? selectedVerseIndex,
-    int? selectedWordIndex,
+    Set<int>? selectedWordIndices,
     int? recordingWordIndex,
     bool? isPlaying,
     double? playbackSpeed,
@@ -48,7 +51,7 @@ class TappingState {
     return TappingState(
       verses: verses ?? this.verses,
       selectedVerseIndex: selectedVerseIndex ?? this.selectedVerseIndex,
-      selectedWordIndex: selectedWordIndex ?? this.selectedWordIndex,
+      selectedWordIndices: selectedWordIndices ?? this.selectedWordIndices,
       recordingWordIndex: clearRecording
           ? null
           : (recordingWordIndex ?? this.recordingWordIndex),
@@ -68,7 +71,7 @@ class TappingNotifier extends StateNotifier<TappingState> {
     state = state.copyWith(
       verses: verses,
       selectedVerseIndex: 0,
-      selectedWordIndex: 0,
+      selectedWordIndices: {0},
       clearRecording: true,
     );
   }
@@ -77,17 +80,50 @@ class TappingNotifier extends StateNotifier<TappingState> {
     if (index >= 0 && index < state.verses.length) {
       state = state.copyWith(
         selectedVerseIndex: index,
-        selectedWordIndex: 0,
+        selectedWordIndices: {0},
         clearRecording: true, // Reset recording on verse change
       );
     }
   }
 
   void selectWord(int index) {
-    if (state.isRecording) return; // Locked during recording
+    if (state.isRecording) return;
     if (index >= 0 && index < state.currentWords.length) {
-      state = state.copyWith(selectedWordIndex: index);
+      state = state.copyWith(selectedWordIndices: {index});
     }
+  }
+
+  void handleWordTap(
+    int index, {
+    bool isControlPressed = false,
+    bool isShiftPressed = false,
+  }) {
+    if (state.isRecording) return;
+    if (index < 0 || index >= state.currentWords.length) return;
+
+    final newIndices = Set<int>.from(state.selectedWordIndices);
+
+    if (isShiftPressed && newIndices.isNotEmpty) {
+      final lastIdx = state.selectedWordIndex;
+      final start = index < lastIdx ? index : lastIdx;
+      final end = index > lastIdx ? index : lastIdx;
+      for (int i = start; i <= end; i++) {
+        newIndices.add(i);
+      }
+    } else if (isControlPressed) {
+      if (newIndices.contains(index)) {
+        if (newIndices.length > 1) {
+          newIndices.remove(index);
+        }
+      } else {
+        newIndices.add(index);
+      }
+    } else {
+      newIndices.clear();
+      newIndices.add(index);
+    }
+
+    state = state.copyWith(selectedWordIndices: newIndices);
   }
 
   // Called when Green Button is clicked
@@ -187,29 +223,37 @@ class TappingNotifier extends StateNotifier<TappingState> {
   }
 
   void undo() {
-    // Basic undo: just clear the last recording if active?
-    // Or move selection back?
-    // User asked for "Manual Flexibility", so maybe undo isn't critical right now.
-    // But let's implement selection fallback for now.
-    if (state.selectedWordIndex > 0) {
-      state = state.copyWith(selectedWordIndex: state.selectedWordIndex - 1);
-    }
+    if (state.selectedWordIndices.isEmpty) return;
+    state = state.copyWith(
+      selectedWordIndices: {
+        state.selectedWordIndices.reduce((a, b) => a < b ? a : b) - 1,
+      }.where((i) => i >= 0).toSet(),
+    );
   }
 
-  void resetWord(int index) {
-    if (state.isRecording) return; // Prevent reset during recording
-    if (index < 0 || index >= state.currentWords.length) return;
+  void resetSelectedWords() {
+    if (state.isRecording) return;
+    if (state.selectedWordIndices.isEmpty) return;
 
-    final word = state.currentWords[index];
-    final resetWord = SyncWord(
-      id: word.id,
-      text: word.text,
-      startTime: null,
-      endTime: null,
-      isParagraphStart: word.isParagraphStart,
+    final updatedVerses = List<Verse>.from(state.verses);
+    final currentVerse = updatedVerses[state.selectedVerseIndex];
+    final updatedWords = List<SyncWord>.from(currentVerse.words);
+
+    for (final index in state.selectedWordIndices) {
+      final word = updatedWords[index];
+      updatedWords[index] = SyncWord(
+        id: word.id,
+        text: word.text,
+        startTime: null,
+        endTime: null,
+        isParagraphStart: word.isParagraphStart,
+      );
+    }
+
+    updatedVerses[state.selectedVerseIndex] = currentVerse.copyWith(
+      words: updatedWords,
     );
-
-    _updateWordAtIndex(index, resetWord);
+    state = state.copyWith(verses: updatedVerses);
   }
 }
 
