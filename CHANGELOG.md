@@ -2,6 +2,25 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-12-28
+
+### Added
+- **Studio Save System**: Full project state persistence (`.json`) with support for manual and automatic saving.
+- **Karaoke Style Preview Mode**: A new tabbed interface to preview synchronization in real-time with verse-based highlighting.
+- **Dynamic Lock**: Preview mode is protected by a 50% synchronization threshold per verse to ensure data quality.
+- **Tabbed UI**: Professional tabbed interface for switching between "Synchronization" and "Preview" modes.
+- **Hotkeys**: Added `Ctrl+S` (Save) and refined `Space/Enter` behavior for seamless mode switching.
+
+### Changed
+- **UI Refinement**: Compacted the control hub and word grid to maximize screen real estate on smaller displays.
+- **Button Styling**: Simplified "Save Session" to "Save" and standardized icon prominent colors.
+- **Model Efficiency**: Refactored internal models to be immutable for better Riverpod performance.
+
+### Fixed
+- Fixed alignment gaps in the right-side studio panel for a pixel-perfect layout.
+- Corrected hover splash layering on active Crimson-themed buttons.
+- Resolved "Silent Fail" typos in the export logging.
+
 ## [2.0.0] - 2025-12-26
 > **Major Production Milestone**: This release transforms ChronoScript Studio into a hardened production environment, focusing on frame-accurate temporal precision and high-throughput studio workflows.
 

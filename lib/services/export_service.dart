@@ -44,13 +44,7 @@ class ExportService {
       }
     }
 
-    // Sort keys naturally (v1_w1, v1_w2...)
-    // Simple alphabetic sort works for standard IDs, but we might want alphanumeric strict if IDs vary.
-    final sortedKeys = syncData.keys.toList()
-      ..sort((a, b) {
-        // basic sort
-        return a.compareTo(b);
-      });
+    final sortedKeys = syncData.keys.toList()..sort();
 
     final Map<String, dynamic> sortedSyncData = {};
     for (var key in sortedKeys) {
@@ -58,16 +52,38 @@ class ExportService {
     }
 
     final Map<String, dynamic> output = {
-      'metadata': {
-        'audio_file': audioFileName ?? 'unknown',
-        'last_modified': DateTime.now().toIso8601String().split('T').first,
-        'generator': 'ChronoScript Studio',
-      },
+      'metadata': _createMetadata(audioFileName: audioFileName),
       'sync_data': sortedSyncData,
       'annotations': {},
     };
 
     return const JsonEncoder.withIndent('  ').convert(output);
+  }
+
+  /// Generates the full project state JSON (StudioSession)
+  static String generateProjectJson(List<Verse> verses, String? audioFilePath) {
+    final List<Map<String, dynamic>> versesData = verses
+        .map((v) => v.toJson())
+        .toList();
+
+    final Map<String, dynamic> output = {
+      'metadata': _createMetadata(audioFilePath: audioFilePath),
+      'verses': versesData,
+    };
+
+    return const JsonEncoder.withIndent('  ').convert(output);
+  }
+
+  static Map<String, String> _createMetadata({
+    String? audioFileName,
+    String? audioFilePath,
+  }) {
+    return {
+      'audio_file': audioFileName ?? 'unknown',
+      'audio_file_path': audioFilePath ?? 'unknown',
+      'last_modified': DateTime.now().toIso8601String(),
+      'generator': 'ChronoScript Studio v2.0.0',
+    };
   }
 
   /// Saves both files to a selected directory
@@ -85,17 +101,29 @@ class ExportService {
     await jsonFile.writeAsString(syncJson);
   }
 
+  /// Saves the full project state to a custom location
+  static Future<void> saveProject(
+    String filePath,
+    List<Verse> verses,
+    String? audioPath,
+  ) async {
+    final jsonContent = generateProjectJson(verses, audioPath);
+    final file = File(filePath);
+    await file.writeAsString(jsonContent);
+  }
+
   /// Performs an auto-save to the temporary directory
-  static Future<void> saveAutoSave(List<Verse> verses) async {
+  static Future<void> saveAutoSave(
+    List<Verse> verses,
+    String? audioPath,
+  ) async {
     try {
       final directory = await getTemporaryDirectory();
       final File file = File('${directory.path}/chrono_autosave.json');
-      final syncJson = generateSyncJson(verses);
-      await file.writeAsString(syncJson);
-      // print("Auto-saved to ${file.path}");
+      final projectJson = generateProjectJson(verses, audioPath);
+      await file.writeAsString(projectJson);
     } catch (e) {
-      // Slient fail for auto-save or log
-      // print("Auto-save failed: $e");
+      // Silent fail for auto-save
     }
   }
 }

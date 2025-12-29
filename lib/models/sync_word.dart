@@ -11,18 +11,18 @@ class SyncWord {
   final String text;
 
   // Start time in milliseconds (null if not yet synced)
-  int? startTime;
+  final int? startTime;
 
   // End time in milliseconds (null if not yet synced)
-  int? endTime;
+  final int? endTime;
 
   // Whether this word starts a new paragraph (visual grouping)
-  bool isParagraphStart;
+  final bool isParagraphStart;
 
   // Helper to check if synced
   bool get isSynced => startTime != null && endTime != null;
 
-  SyncWord({
+  const SyncWord({
     required this.id,
     required this.text,
     this.startTime,
@@ -34,18 +34,20 @@ class SyncWord {
   SyncWord copyWith({
     String? id,
     String? text,
-    int? startTime,
-    int? endTime,
+    Object? startTime = _sentinel,
+    Object? endTime = _sentinel,
     bool? isParagraphStart,
   }) {
     return SyncWord(
       id: id ?? this.id,
       text: text ?? this.text,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
+      startTime: startTime == _sentinel ? this.startTime : startTime as int?,
+      endTime: endTime == _sentinel ? this.endTime : endTime as int?,
       isParagraphStart: isParagraphStart ?? this.isParagraphStart,
     );
   }
+
+  static const _sentinel = Object();
 
   factory SyncWord.fromJson(Map<String, dynamic> json) =>
       _$SyncWordFromJson(json);

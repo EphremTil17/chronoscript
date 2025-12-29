@@ -3,6 +3,7 @@ import '../models/sync_word.dart';
 import '../models/verse.dart';
 
 // --- State Classes ---
+enum TappingTab { sync, preview }
 
 class TappingState {
   final List<Verse> verses;
@@ -25,6 +26,7 @@ class TappingState {
   final bool isPlaying;
   final double playbackSpeed;
   final bool isVerificationMode;
+  final TappingTab currentTab;
 
   bool get isRecording => recordingWordIndex != null;
 
@@ -36,6 +38,7 @@ class TappingState {
     this.isPlaying = false,
     this.playbackSpeed = 1.0,
     this.isVerificationMode = false,
+    this.currentTab = TappingTab.sync,
   });
 
   TappingState copyWith({
@@ -46,6 +49,7 @@ class TappingState {
     bool? isPlaying,
     double? playbackSpeed,
     bool? isVerificationMode,
+    TappingTab? currentTab,
     bool clearRecording = false, // Helper to set recordingWordIndex to null
   }) {
     return TappingState(
@@ -58,6 +62,7 @@ class TappingState {
       isPlaying: isPlaying ?? this.isPlaying,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       isVerificationMode: isVerificationMode ?? this.isVerificationMode,
+      currentTab: currentTab ?? this.currentTab,
     );
   }
 }
@@ -131,22 +136,9 @@ class TappingNotifier extends StateNotifier<TappingState> {
     final index = state.selectedWordIndex;
     final word = state.currentWords[index];
 
-    // Update word with START time, clear END time
-    // We create a new word directly to handle null endTime (since copyWith might ignore it)
-    // Need way to set null. SyncWord copyWith should support it if we designed it right.
-    // Assuming copyWith(endTime: null) works if we didn't default it.
-    // Actually my copyWith implementation usually ignores nulls.
-    // So I might need to reconstruct the object or update copyWith.
-    // For now, let's create a new word.
-    final newWord = SyncWord(
-      id: word.id,
-      text: word.text,
-      startTime: startTimeMs,
-      endTime: null,
-      isParagraphStart: word.isParagraphStart,
-    );
+    final updatedWord = word.copyWith(startTime: startTimeMs, endTime: null);
 
-    _updateWordAtIndex(index, newWord);
+    _updateWordAtIndex(index, updatedWord);
     state = state.copyWith(recordingWordIndex: index);
   }
 
@@ -220,6 +212,10 @@ class TappingNotifier extends StateNotifier<TappingState> {
 
   void toggleVerificationMode() {
     state = state.copyWith(isVerificationMode: !state.isVerificationMode);
+  }
+
+  void setTab(TappingTab tab) {
+    state = state.copyWith(currentTab: tab);
   }
 
   void undo() {

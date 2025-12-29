@@ -15,8 +15,16 @@ The application features a custom-built waveform extraction system that utilizes
 - Employs a fixed-resolution caching layer (200 high-fidelity peaks) to minimize CPU overhead and storage footprint.
 - Utilizes `RepaintBoundary` and cached `Paint` objects for 60FPS fluid scrubbing on desktop hardware.
 
-### "Chain-Sync" Workflow
-To handle the fast pace of spoken content, the studio implements a "Chain-Sync" logic. This allows the operator to mark the end of one word and the start of the next with a single interaction, ensuring zero-gap transitions and maintaining a continuous synchronous flow.
+### Studio Session Persistence
+ChronoScript Studio now supports full session persistence. Operators can save their entire project state—including partial synchronizations, verse selections, and audio paths—into a specialized Studio Session file (`.json`). 
+- **Auto-Save**: A background persistence layer automatically backups progress every 30 seconds to the system temporary directory.
+- **Manual Save**: Operators can save their work at any time to a custom location to resume later.
+
+### Karaoke Style Preview Mode
+A dedicated "Preview" tab provides a real-time, interactive environment to verify synchronization quality.
+- **Dynamic Highlighting**: Words illuminate in real-time as the audio plays, using the production "Crimson" theme.
+- **Visual Confidence**: A 50% synchronization threshold ensures that only verses with sufficient data are available for preview, maintaining high production standards.
+- **Tabbed Workflow**: Seamlessly switch between the "Synchronization" grid and the "Preview" flow using the Chrome-inspired tabbed interface.
 
 ### Desktop-First Architecture
 Designed as a dedicated Windows application using Flutter, ChronoScript Studio leverages system-level window management for a premium production feel, supporting large-screen layouts and high-resolution typography specialized for Ethiopic and other complex scripts. The **"Crimson & Parchment"** design system was developed specifically to provide a high-contrast, low-fatigue environment for long-form transcription sessions.
@@ -25,7 +33,7 @@ Designed as a dedicated Windows application using Flutter, ChronoScript Studio l
 
 ### Tech Stack & Rationale
 - **Framework**: Flutter (Desktop/Windows) — *Selected for its 60FPS rendering performance and native x64 compilation.*
-- **State Management**: Riverpod (StateNotifier) — *Enables a reactive, unidirectional data flow that keeps the playback timer and UI word cards in perfect synchronization.*
+- **State Management**: Riverpod (StateNotifier) — *Enables a reactive, unidirectional data flow that keeps the playback timer, UI word cards, and preview state in perfect synchronization.*
 - **Audio Engine**: flutter_soloud (C++) — *Utilized for its low-level memory-mapped decoding, ensuring frame-accurate seeking at any playback speed.*
 - **Process Management**: FFmpeg — *The industrial standard for media analysis, used here for high-speed, asynchronous waveform peak extraction.*
 - **Typography**: Lexend and Noto Serif Ethiopic — *Chosen for their specialized optical kerning and superior ligature rendering for complex scripts.*
@@ -33,7 +41,7 @@ Designed as a dedicated Windows application using Flutter, ChronoScript Studio l
 ### Key Infrastructure
 - `flutter_riverpod`: Handles the high-frequency state updates required for real-time playhead tracking.
 - `flutter_soloud`: Powers the high-performance audio scrubbing and speed-neutralization seeking logic.
-- `path_provider`: Manages the secure local caching of generated waveform datasets.
+- `file_picker`: Integrated for professional file handling during session saves and exports.
 - `window_manager`: Handles native Windows window lifecycle and the custom integrated title bar.
 
 ## Prerequisites
@@ -60,10 +68,13 @@ The application requires FFmpeg to be installed and accessible via the system PA
 3. **Synchronization**:
    - Use the Play button to start audio playback.
    - Click the "**TRANSCRIBE**" button to mark the beginning of a word.
-   - Use the "**CHAIN**" button or designated shortcuts to concurrently end the current word and start the next.
+   - Use the "**CHAIN**" button or designated shortcuts (`Space`) to concurrently end the current word and start the next.
    - Use the "**Reset Word**" button to clear synchronization data for the selected word if corrections are needed.
-4. **Verification**: Scrub through the optimized waveform to verify word placements. Individual word cards will highlight in alignment with the audio playhead.
-5. **Export**: Data is exported in a structured JSON format containing time-aligned textual segments and word objects.
+4. **Saving**: Use the "**Save**" button or `Ctrl+S` to persist your studio session.
+5. **Verification & Preview**: 
+   - Switch to the "**Preview**" tab to see the live Karaoke-style playback.
+   - Scrub through the optimized waveform to verify word placements. Individual word cards will highlight in alignment with the audio playhead.
+6. **Export**: Export the final synchronized outputs (JSON & Tagged Markdown) once the verse is fully perfected.
 
 ## Local Development
 

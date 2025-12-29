@@ -10,6 +10,8 @@ import 'package:chronoscript/models/sync_word.dart';
 import 'package:chronoscript/ui/widgets/verse_sidebar.dart';
 import 'package:chronoscript/ui/widgets/liturgy_hub.dart';
 import 'package:chronoscript/ui/widgets/custom_title_bar.dart';
+import 'package:chronoscript/ui/widgets/preview_tab.dart';
+import 'package:file_picker/file_picker.dart';
 
 class TappingPage extends ConsumerStatefulWidget {
   const TappingPage({super.key});
@@ -95,8 +97,36 @@ class _TappingPageState extends ConsumerState<TappingPage> {
 
   void _autoSave() async {
     final state = ref.read(tappingProvider);
+    final audioPath = ref.read(audioPathProvider);
     if (state.verses.isEmpty) return;
-    await ExportService.saveAutoSave(state.verses);
+    await ExportService.saveAutoSave(state.verses, audioPath);
+  }
+
+  Future<void> _manualSave() async {
+    final state = ref.read(tappingProvider);
+    final audioPath = ref.read(audioPathProvider);
+
+    String? outputFile = await FilePicker.platform.saveFile(
+      dialogTitle: 'Save Studio Session',
+      fileName: 'session.json',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+
+    if (outputFile != null) {
+      await ExportService.saveProject(outputFile, state.verses, audioPath);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Project saved successfully!",
+              style: GoogleFonts.lexend(),
+            ),
+            backgroundColor: const Color(0xFF8B1538),
+          ),
+        );
+      }
+    }
   }
 
   void _onVerseSelected(int index) {
@@ -187,7 +217,46 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                                   ),
                                 ),
                                 const Spacer(),
-                                // Removed placeholder settings/fullscreen icons per request
+                                // Save Button (Right Top)
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: _manualSave,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: const Color(
+                                            0xFF8B1538,
+                                          ).withValues(alpha: 0.3),
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.save_outlined,
+                                            size: 18,
+                                            color: Color(0xFF8B1538),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "Save",
+                                            style: GoogleFonts.lexend(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFF8B1538),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -228,108 +297,122 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                                     32,
                                     16,
                                     32,
-                                    16,
+                                    12,
                                   ),
                                   child: Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        "Word Synchronization",
-                                        style: GoogleFonts.lexend(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF2C2C2C),
-                                        ),
-                                      ),
                                       Row(
                                         children: [
-                                          _buildLegendItem(
-                                            "Synced",
-                                            const Color(0xFFB8860B),
+                                          _buildTabButton(
+                                            "Synchronization",
+                                            TappingTab.sync,
+                                            state.currentTab,
                                           ),
-                                          const SizedBox(width: 16),
-                                          _buildLegendItem(
-                                            "Active",
-                                            const Color(0xFF8B1538),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          _buildLegendItem(
-                                            "Pending",
-                                            Colors.grey.shade400,
-                                            isCircle: true,
+                                          const SizedBox(width: 8),
+                                          _buildTabButton(
+                                            "Preview",
+                                            TappingTab.preview,
+                                            state.currentTab,
                                           ),
                                         ],
                                       ),
+                                      if (state.currentTab == TappingTab.sync)
+                                        Row(
+                                          children: [
+                                            _buildLegendItem(
+                                              "Synced",
+                                              const Color(0xFFB8860B),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            _buildLegendItem(
+                                              "Active",
+                                              const Color(0xFF8B1538),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            _buildLegendItem(
+                                              "Pending",
+                                              Colors.grey.shade400,
+                                              isCircle: true,
+                                            ),
+                                          ],
+                                        ),
                                     ],
                                   ),
                                 ),
                                 Expanded(
-                                  child: GridView.builder(
-                                    controller: _gridScrollController,
-                                    padding: const EdgeInsets.fromLTRB(
-                                      32,
-                                      0,
-                                      32,
-                                      32,
-                                    ),
-                                    gridDelegate:
-                                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                                          maxCrossAxisExtent: 220,
-                                          mainAxisSpacing: 20,
-                                          crossAxisSpacing: 20,
-                                          childAspectRatio: 1.6,
+                                  child: state.currentTab == TappingTab.preview
+                                      ? const PreviewTab()
+                                      : GridView.builder(
+                                          controller: _gridScrollController,
+                                          padding: const EdgeInsets.fromLTRB(
+                                            32,
+                                            0,
+                                            32,
+                                            32,
+                                          ),
+                                          gridDelegate:
+                                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                                maxCrossAxisExtent: 220,
+                                                mainAxisSpacing: 20,
+                                                crossAxisSpacing: 20,
+                                                childAspectRatio: 1.6,
+                                              ),
+                                          itemCount: currentVerseWords.length,
+                                          itemBuilder: (context, index) {
+                                            final word =
+                                                currentVerseWords[index];
+                                            return _WordCard(
+                                              word: word,
+                                              isSelected: state
+                                                  .selectedWordIndices
+                                                  .contains(index),
+                                              isSynced:
+                                                  word.startTime != null &&
+                                                  word.endTime != null,
+                                              isRecordingActive:
+                                                  isRecording &&
+                                                  state.recordingWordIndex ==
+                                                      index,
+                                              isChainedToNext: _isChained(
+                                                currentVerseWords,
+                                                index,
+                                              ),
+                                              onTap: isGridSelectionLocked
+                                                  ? null
+                                                  : () {
+                                                      notifier.handleWordTap(
+                                                        index,
+                                                        isControlPressed:
+                                                            HardwareKeyboard
+                                                                .instance
+                                                                .isControlPressed,
+                                                        isShiftPressed:
+                                                            HardwareKeyboard
+                                                                .instance
+                                                                .isShiftPressed,
+                                                      );
+                                                      if (word.startTime !=
+                                                              null &&
+                                                          !state.isRecording &&
+                                                          !HardwareKeyboard
+                                                              .instance
+                                                              .isControlPressed &&
+                                                          !HardwareKeyboard
+                                                              .instance
+                                                              .isShiftPressed) {
+                                                        audioCtrl.seek(
+                                                          Duration(
+                                                            milliseconds:
+                                                                word.startTime!,
+                                                          ),
+                                                        );
+                                                      }
+                                                    },
+                                            );
+                                          },
                                         ),
-                                    itemCount: currentVerseWords.length,
-                                    itemBuilder: (context, index) {
-                                      final word = currentVerseWords[index];
-                                      return _WordCard(
-                                        word: word,
-                                        isSelected: state.selectedWordIndices
-                                            .contains(index),
-                                        isSynced:
-                                            word.startTime != null &&
-                                            word.endTime != null,
-                                        isRecordingActive:
-                                            isRecording &&
-                                            state.recordingWordIndex == index,
-                                        isChainedToNext: _isChained(
-                                          currentVerseWords,
-                                          index,
-                                        ),
-                                        onTap: isGridSelectionLocked
-                                            ? null
-                                            : () {
-                                                notifier.handleWordTap(
-                                                  index,
-                                                  isControlPressed:
-                                                      HardwareKeyboard
-                                                          .instance
-                                                          .isControlPressed,
-                                                  isShiftPressed:
-                                                      HardwareKeyboard
-                                                          .instance
-                                                          .isShiftPressed,
-                                                );
-                                                if (word.startTime != null &&
-                                                    !state.isRecording &&
-                                                    !HardwareKeyboard
-                                                        .instance
-                                                        .isControlPressed &&
-                                                    !HardwareKeyboard
-                                                        .instance
-                                                        .isShiftPressed) {
-                                                  audioCtrl.seek(
-                                                    Duration(
-                                                      milliseconds:
-                                                          word.startTime!,
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                      );
-                                    },
-                                  ),
                                 ),
                               ],
                             ),
@@ -505,6 +588,43 @@ class _TappingPageState extends ConsumerState<TappingPage> {
     return w.endTime != null &&
         next.startTime != null &&
         w.endTime == next.startTime;
+  }
+
+  Widget _buildTabButton(String label, TappingTab tab, TappingTab activeTab) {
+    final bool isActive = tab == activeTab;
+    const kCrimson = Color(0xFF8B1538);
+    const kInactiveParchment = Color(0xFFE8E2D5);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => ref.read(tappingProvider.notifier).setTab(tab),
+        borderRadius: BorderRadius.circular(8),
+        hoverColor: isActive
+            ? Colors.white.withValues(alpha: 0.15)
+            : Colors.black.withValues(alpha: 0.05),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          decoration: BoxDecoration(
+            color: isActive
+                ? kCrimson
+                : kInactiveParchment.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isActive ? kCrimson : Colors.grey.shade300,
+            ),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.lexend(
+              fontSize: 13,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              color: isActive ? Colors.white : Colors.grey.shade700,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildLegendItem(String label, Color color, {bool isCircle = false}) {

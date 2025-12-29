@@ -1,0 +1,29 @@
+{
+    "metadata": {
+        "audio_file": "sample_liturgy.mp3",
+        "audio_file_path": "C:/Audio/sample_liturgy.mp3",
+        "last_modified": "2025-12-28T23:59:59.000Z",
+        "generator": "ChronoScript Studio v2.1.0"
+    },
+    "verses": [
+        {
+            "id": "v1",
+            "words": [
+                {
+                    "id": "v1_w1",
+                    "text": "ቃለ",
+                    "startTime": 1200,
+                    "endTime": 1800,
+                    "isParagraphStart": true
+                },
+                {
+                    "id": "v1_w2",
+                    "text": "እግዚአብሔር",
+                    "startTime": 1800,
+                    "endTime": 2500,
+                    "isParagraphStart": false
+                }
+            ]
+        }
+    ]
+}
