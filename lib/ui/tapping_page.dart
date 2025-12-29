@@ -99,10 +99,15 @@ class _TappingPageState extends ConsumerState<TappingPage> {
     final state = ref.read(tappingProvider);
     final audioPath = ref.read(audioPathProvider);
     if (state.verses.isEmpty) return;
-    await ExportService.saveAutoSave(state.verses, audioPath);
+    await ExportService.saveAutoSave(
+      verses: state.verses,
+      audioPath: audioPath,
+      selectedVerseIndex: state.selectedVerseIndex,
+      currentTab: state.currentTab,
+    );
   }
 
-  Future<void> _manualSave() async {
+  Future<bool> _manualSave() async {
     final state = ref.read(tappingProvider);
     final audioPath = ref.read(audioPathProvider);
 
@@ -114,7 +119,13 @@ class _TappingPageState extends ConsumerState<TappingPage> {
     );
 
     if (outputFile != null) {
-      await ExportService.saveProject(outputFile, state.verses, audioPath);
+      await ExportService.saveProject(
+        filePath: outputFile,
+        verses: state.verses,
+        audioPath: audioPath,
+        selectedVerseIndex: state.selectedVerseIndex,
+        currentTab: state.currentTab,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -126,6 +137,64 @@ class _TappingPageState extends ConsumerState<TappingPage> {
           ),
         );
       }
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _exitToMainMenu() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          "Exit to Main Menu",
+          style: GoogleFonts.lexend(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "Unsaved progress will be lost. Do you want to save before exiting?",
+          style: GoogleFonts.lexend(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: Text(
+              "CANCEL",
+              style: GoogleFonts.lexend(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'discard'),
+            child: Text(
+              "DISCARD",
+              style: GoogleFonts.lexend(color: Colors.red),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B1538),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, 'save'),
+            child: Text("SAVE & EXIT", style: GoogleFonts.lexend()),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null || result == 'cancel') return;
+
+    if (result == 'save') {
+      final saved = await _manualSave();
+      if (!saved) return; // User cancelled the save dialog
+    }
+
+    // Cleanup and Exit
+    final audioCtrl = ref.read(audioControllerProvider);
+    audioCtrl.pause();
+    ref.read(tappingProvider.notifier).setPlaying(false);
+
+    if (mounted) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -253,6 +322,32 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                                             ),
                                           ),
                                         ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Close/Exit Button
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: _exitToMainMenu,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 18,
+                                        color: Color(0xFF2C2C2C),
                                       ),
                                     ),
                                   ),

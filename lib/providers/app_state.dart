@@ -65,12 +65,30 @@ class TappingState {
       currentTab: currentTab ?? this.currentTab,
     );
   }
+
+  factory TappingState.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> versesJson = json['verses'] as List<dynamic>;
+    final stateJson = json['state'] as Map<String, dynamic>? ?? {};
+
+    return TappingState(
+      verses: versesJson.map((v) => Verse.fromJson(v)).toList(),
+      selectedVerseIndex: stateJson['selected_verse_index'] ?? 0,
+      currentTab: TappingTab.values.firstWhere(
+        (e) => e.name == (stateJson['current_tab'] ?? 'sync'),
+        orElse: () => TappingTab.sync,
+      ),
+    );
+  }
 }
 
 // --- Providers ---
 
 class TappingNotifier extends StateNotifier<TappingState> {
   TappingNotifier() : super(const TappingState());
+
+  void loadSession(TappingState loadedState) {
+    state = loadedState;
+  }
 
   void setVerses(List<Verse> verses) {
     state = state.copyWith(

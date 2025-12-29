@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'services/font_service.dart';
+import 'services/ffmpeg_waveform_service.dart';
 import 'ui/startup_screen.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,8 +35,44 @@ void main() async {
   runApp(const ProviderScope(child: ChronoScriptApp()));
 }
 
-class ChronoScriptApp extends StatelessWidget {
+class ChronoScriptApp extends StatefulWidget {
   const ChronoScriptApp({super.key});
+
+  @override
+  State<ChronoScriptApp> createState() => _ChronoScriptAppState();
+}
+
+class _ChronoScriptAppState extends State<ChronoScriptApp> with WindowListener {
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+    // Prevent default close behavior to allow cleanup
+    windowManager.setPreventClose(true);
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    bool isPreventClose = await windowManager.isPreventClose();
+    if (isPreventClose) {
+      // 1. Cleanup Audio
+      if (SoLoud.instance.isInitialized) {
+        SoLoud.instance.deinit();
+      }
+      // 2. Cleanup FFmpeg (Active processes)
+      FfmpegWaveformService.killAll();
+
+      // 3. Destroy window and Exit
+      await windowManager.destroy();
+      exit(0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

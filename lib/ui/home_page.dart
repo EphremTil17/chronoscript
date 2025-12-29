@@ -1,8 +1,11 @@
+import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronoscript/ui/widgets/custom_title_bar.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:chronoscript/services/export_service.dart';
 import 'package:chronoscript/services/ingestion_service.dart';
 import 'package:chronoscript/providers/app_state.dart';
 import 'package:chronoscript/controllers/audio_controller.dart';
@@ -76,6 +79,213 @@ class _HomePageState extends ConsumerState<HomePage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _resumeSession() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      dialogTitle: 'Select Studio Session',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+
+    if (result == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final String path = result.files.single.path!;
+      final sessionData = await ExportService.loadSession(path);
+
+      final metadata = sessionData['metadata'] as Map<String, dynamic>;
+      String originalFileName = metadata['audio_file'] as String? ?? 'unknown';
+      final String? audioFilePathSaved = metadata['audio_file_path'];
+
+      // Fallback: If name it unknown but path exists, extract name from path using p.basename
+      if (originalFileName == 'unknown' &&
+          audioFilePathSaved != null &&
+          audioFilePathSaved != 'unknown') {
+        originalFileName = p.basename(audioFilePathSaved);
+      }
+
+      String? audioPath = audioFilePathSaved;
+
+      bool needsRelink =
+          audioPath == null ||
+          audioPath == 'unknown' ||
+          !await File(audioPath).exists();
+
+      if (needsRelink) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Audio file not found at original path. Please locate '$originalFileName'.",
+                style: GoogleFonts.lexend(),
+              ),
+              backgroundColor: Colors.orange[800],
+            ),
+          );
+        }
+
+        FilePickerResult? audioResult = await FilePicker.platform.pickFiles(
+          dialogTitle: 'Locate Audio: $originalFileName',
+          type: FileType.custom,
+          allowedExtensions: ['mp3', 'wav'],
+        );
+
+        if (audioResult == null) {
+          throw Exception("Audio file is required to resume session.");
+        }
+
+        final selectedFile = audioResult.files.single;
+        final selectedName = selectedFile.name;
+
+        // --- SAFETY CHECK 1: Filename Match ---
+        if (selectedName.toLowerCase() != originalFileName.toLowerCase()) {
+          final proceed = await _showSafetyDialog(
+            originalFileName,
+            selectedName,
+          );
+          if (proceed != true) {
+            throw Exception("Session load cancelled due to audio mismatch.");
+          }
+        }
+        audioPath = selectedFile.path;
+      }
+
+      // --- SAFETY CHECK 2: Duration Validation ---
+      final audioCtrl = ref.read(audioControllerProvider);
+      await audioCtrl.setAudioFile(audioPath!);
+
+      // Calculate max timestamp in session
+      int maxMs = 0;
+      final versesJson = sessionData['verses'] as List<dynamic>? ?? [];
+      for (var v in versesJson) {
+        final words = v['words'] as List<dynamic>? ?? [];
+        for (var w in words) {
+          final end = w['endTime'] as int?;
+          if (end != null && end > maxMs) maxMs = end;
+        }
+      }
+
+      final mediaDurationMs = audioCtrl.totalDuration.inMilliseconds;
+      if (mediaDurationMs < maxMs) {
+        throw Exception(
+          "Safety Block: The selected audio (${mediaDurationMs}ms) is shorter than the synchronization data (${maxMs}ms). "
+          "Loading this file could lead to data corruption.",
+        );
+      }
+
+      // 1. Finalise Setup
+      ref.read(audioPathProvider.notifier).state = audioPath;
+
+      // 2. Initialise State
+      final loadedState = TappingState.fromJson(sessionData);
+      ref.read(tappingProvider.notifier).loadSession(loadedState);
+
+      // 4. Navigate
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const TappingPage()));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().replaceAll("Exception: ", ""),
+              style: GoogleFonts.lexend(),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<bool?> _showSafetyDialog(String original, String selected) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          "Audio Name Mismatch",
+          style: GoogleFonts.lexend(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "The selected file name does not match the original session metadata:",
+              style: GoogleFonts.lexend(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            _buildDialogInfoBlock("Original", original, Colors.grey.shade600),
+            const SizedBox(height: 8),
+            _buildDialogInfoBlock("Selected", selected, kCrimson),
+            const SizedBox(height: 16),
+            Text(
+              "Are you sure you want to use this audio file?",
+              style: GoogleFonts.lexend(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              "CANCEL",
+              style: GoogleFonts.lexend(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kCrimson,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text("!Load Anyway!", style: GoogleFonts.lexend()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDialogInfoBlock(String label, String value, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.lexend(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.lexend(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -197,6 +407,31 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   letterSpacing: 1.2,
                                 ),
                               ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Resume Button
+                    SizedBox(
+                      width: 300,
+                      height: 56,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: kCrimson, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: _isLoading ? null : _resumeSession,
+                        child: Text(
+                          "RESUME EXISTING SESSION",
+                          style: GoogleFonts.lexend(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: kCrimson,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),

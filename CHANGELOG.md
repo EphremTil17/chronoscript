@@ -2,6 +2,26 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-12-29
+
+### Added
+- **Session Restoration System**: Added "RESUME EXISTING SESSION" functionality on the Home Page, allowing operators to pick up exactly where they left off with full state recovery (selected verse, tab index, and synchronization progress).
+- **Advanced Audio Safety Guard**:
+    - **Intelligent Relinking**: If an audio file has been moved on disk, the system prompts the user to relocate it by name.
+    - **Three-Tier Verification**: Implemented a safety pipeline that checks for filename perfect matches, provides warnings for fuzzy matches, and enforces a "Hard Block" duration check if the new audio is shorter than existing synchronization timestamps.
+- **Studio Lifecycle Management**: 
+    - Added "Exit to Main Menu" with a multi-choice safety dialog (Save, Discard, or Cancel).
+    - Integrated native window-close interception to ensure background engines (SoLoud, FFmpeg) are terminated reliably on application exit.
+- **Granular Progress Visualization**: 
+    - Added an "Overall Completion" tracker with a large progress indicator in the Verse Sidebar.
+    - Implemented persistent sync-percentage displays and mini-progress bars for every verse in the navigation list.
+    - Visual indicators now highlight 100% completed verses in "Success Green."
+
+### Fixed
+- **Metadata Robustness**: Resolved an issue where project files would save with an "unknown" audio filename. The system now intelligently derives the filename from the path via the `path` package.
+- **Process Cleanup**: Fixed a critical bug where background services would persist in the Task Manager after the application window was closed.
+- **Memory Optimization**: Refactored FFmpeg extraction to be more stable and balanced the audio engine's memory footprint for long-form sessions.
+
 ## [2.1.0] - 2025-12-28
 
 ### Added

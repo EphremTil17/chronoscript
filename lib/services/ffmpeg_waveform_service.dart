@@ -14,6 +14,18 @@ class FfmpegWaveformService {
   // Target number of peaks for visualization - keep this small for performance
   static const int targetPeakCount = 400;
 
+  static final Set<Process> _activeProcesses = {};
+
+  /// Forcefully kills all active FFmpeg processes.
+  static void killAll() {
+    for (final process in _activeProcesses) {
+      try {
+        process.kill(ProcessSignal.sigterm);
+      } catch (_) {}
+    }
+    _activeProcesses.clear();
+  }
+
   FfmpegWaveformService({this.onLog});
 
   void _log(String message) {
@@ -77,15 +89,17 @@ class FfmpegWaveformService {
 
   Future<List<double>> _runFfmpeg(String audioPath) async {
     // Use low sample rate for fast processing
-    // 4kHz * 30min = 7.2M samples, divided into peaks
-    final result = await Process.run('ffmpeg', [
+    final List<String> args = [
       '-i', audioPath,
       '-ac', '1', // Mono
       '-ar', '4000', // 4kHz (low for speed)
       '-f', 's16le',
       '-acodec', 'pcm_s16le',
       'pipe:1',
-    ], stdoutEncoding: null);
+    ];
+
+    _log("Running FFmpeg...");
+    final result = await Process.run('ffmpeg', args, stdoutEncoding: null);
 
     if (result.exitCode != 0) {
       _log("FFmpeg error");

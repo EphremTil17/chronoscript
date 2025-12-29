@@ -21,13 +21,24 @@ class VerseSidebar extends StatelessWidget {
     const kCrimson = Color(0xFF8B1538);
     const kPaper = Color(0xFFF5F1E8);
 
+    // Calculate Overall Progress
+    int totalWords = 0;
+    int totalSynced = 0;
+    for (var v in verses) {
+      totalWords += v.words.length;
+      totalSynced += v.syncedWordCount;
+    }
+    final double overallProgress = totalWords > 0
+        ? totalSynced / totalWords
+        : 0.0;
+
     return Container(
       color: kPaper,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 24.0, top: 40, bottom: 16),
+            padding: const EdgeInsets.only(left: 24.0, top: 40, bottom: 8),
             child: Text(
               "VERSES",
               style: GoogleFonts.lexend(
@@ -38,6 +49,52 @@ class VerseSidebar extends StatelessWidget {
               ),
             ),
           ),
+
+          // Overall Completion Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "COMPLETION",
+                      style: GoogleFonts.lexend(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black54,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    Text(
+                      "${(overallProgress * 100).toInt()}%",
+                      style: GoogleFonts.lexend(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: kCrimson,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: overallProgress,
+                    minHeight: 6,
+                    backgroundColor: kCrimson.withValues(alpha: 0.1),
+                    valueColor: const AlwaysStoppedAnimation(kCrimson),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, indent: 24, endIndent: 24),
+          const SizedBox(height: 12),
+
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -63,38 +120,52 @@ class VerseSidebar extends StatelessWidget {
                   color: isSelected ? Colors.white : Colors.transparent,
                   child: InkWell(
                     onTap: isLocked ? null : () => onVerseSelected(idx),
-                    hoverColor: kCrimson.withValues(alpha: 0.1),
+                    hoverColor: kCrimson.withValues(alpha: 0.05),
                     child: Container(
-                      height: 52,
+                      height: 64, // Increased height for two-line layout
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Row(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            displayId,
-                            style: GoogleFonts.lexend(
-                              fontSize: 14,
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: isSelected ? kCrimson : Colors.black87,
+                          Row(
+                            children: [
+                              Text(
+                                displayId,
+                                style: GoogleFonts.lexend(
+                                  fontSize: 13,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: isSelected ? kCrimson : Colors.black87,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                "${(progress * 100).toInt()}%",
+                                style: GoogleFonts.lexend(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: progress == 1.0
+                                      ? Colors.green.shade700
+                                      : kCrimson.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 3,
+                              backgroundColor: kCrimson.withValues(alpha: 0.05),
+                              valueColor: AlwaysStoppedAnimation(
+                                progress == 1.0
+                                    ? Colors.green.shade400
+                                    : kCrimson.withValues(alpha: 0.4),
+                              ),
                             ),
                           ),
-                          const Spacer(),
-                          if (isSelected)
-                            Text(
-                              "${(progress * 100).toInt()}%",
-                              style: GoogleFonts.lexend(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: kCrimson.withAlpha((255 * 0.6).toInt()),
-                              ),
-                            )
-                          else
-                            Icon(
-                              Icons.chevron_right,
-                              size: 14,
-                              color: Colors.grey.withAlpha((255 * 0.4).toInt()),
-                            ),
                         ],
                       ),
                     ),

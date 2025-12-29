@@ -254,7 +254,7 @@ class AudioController {
 // Global provider for the AudioController
 final audioControllerProvider = Provider<AudioController>((ref) {
   final controller = AudioController();
-  controller.init(); // Fire and forget init
+  controller.init(); // Initialize eagerly as requested
   ref.onDispose(() => controller.dispose());
   return controller;
 });

@@ -15,10 +15,17 @@ The application features a custom-built waveform extraction system that utilizes
 - Employs a fixed-resolution caching layer (200 high-fidelity peaks) to minimize CPU overhead and storage footprint.
 - Utilizes `RepaintBoundary` and cached `Paint` objects for 60FPS fluid scrubbing on desktop hardware.
 
-### Studio Session Persistence
-ChronoScript Studio now supports full session persistence. Operators can save their entire project state—including partial synchronizations, verse selections, and audio paths—into a specialized Studio Session file (`.json`). 
-- **Auto-Save**: A background persistence layer automatically backups progress every 30 seconds to the system temporary directory.
-- **Manual Save**: Operators can save their work at any time to a custom location to resume later.
+### Studio Session Persistence & Restoration
+ChronoScript Studio now supports full session persistence and intelligent restoration. 
+- **Auto-Save**: A background persistence layer automatically backups progress every 60 seconds to a localized auto-save file.
+- **Manual Save**: Operators can save their work to a custom location to resume later.
+- **Intelligent Restoration**: The system can resume sessions even if the original audio has been moved. It employs a three-tier safety logic (filename match, fuzzy match override, and a hardware duration guard) to ensure project integrity during restoration.
+- **Full State Recovery**: Resuming a session restores the exact UI state, including the last selected verse, tab index, and all granular synchronization data.
+
+### Granular Progress Tracking
+The application provides real-time feedback on project completion to ensure production targets are met.
+- **Overall Completion Header**: A persistent progress bar at the top of the studio sidebar summarizes total project synchronization.
+- **Verse-Level Metrics**: Every verse in the navigation list displays a numerical percentage and a mini progress bar, with 100% complete sections clearly highlighted in green.
 
 ### Karaoke Style Preview Mode
 A dedicated "Preview" tab provides a real-time, interactive environment to verify synchronization quality.
@@ -64,7 +71,9 @@ The application requires FFmpeg to be installed and accessible via the system PA
 ## Usage Guide
 
 1. **Initialization**: Upon launch, the application performs a prerequisite check. Ensure FFmpeg is detected before proceeding.
-2. **Ingestion**: Upload the raw source text (`.txt` or `.md`) and the corresponding audio file (`.mp3` or `.wav`).
+2. **Entry Point**:
+   - **New Project**: Select "INITIALIZE STUDIO" after uploading source text (`.txt`/`.md`) and audio (`.mp3`/`.wav`).
+   - **Resume Session**: Select "RESUME EXISTING SESSION" to load a previously saved `.json` project file.
 3. **Synchronization**:
    - Use the Play button to start audio playback.
    - Click the "**TRANSCRIBE**" button to mark the beginning of a word.
