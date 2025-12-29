@@ -305,15 +305,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                   children: [
                     // Logo/Icon
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: kCrimson, width: 2),
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: kCrimson, width: 2.5),
                       ),
-                      child: Icon(
-                        Icons.auto_stories,
-                        size: 64,
-                        color: kCrimson,
+                      child: Image.asset(
+                        'assets/icons/app_icon.png',
+                        width: 110,
+                        height: 110,
+                        fit: BoxFit.contain,
                       ),
                     ),
                     const SizedBox(height: 32),

@@ -24,6 +24,8 @@ void main() async {
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
+    // Set the icon for Taskbar/Task Manager
+    await windowManager.setIcon('assets/icons/app_icon.png');
   });
 
   // Verify Font Availability

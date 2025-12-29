@@ -58,6 +58,7 @@ dev_dependencies:
   
   # JSON generation
   build_runner: ^2.4.8
+  flutter_launcher_icons: ^0.14.1
   json_serializable: ^6.7.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -78,10 +79,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/sample_project.json
+    - assets/icons/app_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -104,3 +104,9 @@ flutter:
     - family: NotoSerifEthiopic
       fonts:
         - asset: assets/fonts/toto_serif_ethiopic.ttf
+
+flutter_launcher_icons:
+  windows:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+    icon_size: 256

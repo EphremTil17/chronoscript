@@ -112,13 +112,10 @@ class _StartupScreenState extends State<StartupScreen> {
                     // Logo/Title
                     Row(
                       children: [
-                        Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: crimson,
-                            shape: BoxShape.circle,
-                          ),
+                        Image.asset(
+                          'assets/icons/app_icon.png',
+                          width: 24,
+                          height: 24,
                         ),
                         const SizedBox(width: 12),
                         Text(
