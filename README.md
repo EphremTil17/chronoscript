@@ -27,6 +27,11 @@ The application provides real-time feedback on project completion to ensure prod
 - **Overall Completion Header**: A persistent progress bar at the top of the studio sidebar summarizes total project synchronization.
 - **Verse-Level Metrics**: Every verse in the navigation list displays a numerical percentage and a mini progress bar, with 100% complete sections clearly highlighted in green.
 
+### In-App System Logs and Smooth & Silent Scrubbing
+A dedicated diagnostic console (accessible via the terminal icon) provides real-time visibility into the application's internal processes.
+- **Persistent Tracking**: Captures all events from startup, including prerequisite checks and FFmpeg extraction logs.
+- **Jitter-Free Drags**: Multi-seek events are suppressed during drags, eliminating background audio jitters.
+
 ### Karaoke Style Preview Mode
 A dedicated "Preview" tab provides a real-time, interactive environment to verify synchronization quality.
 - **Dynamic Highlighting**: Words illuminate in real-time as the audio plays, using the production "Crimson" theme.
@@ -36,20 +41,13 @@ A dedicated "Preview" tab provides a real-time, interactive environment to verif
 ### Desktop-First Architecture
 Designed as a dedicated Windows application using Flutter, ChronoScript Studio leverages system-level window management for a premium production feel, supporting large-screen layouts and high-resolution typography specialized for Ethiopic and other complex scripts. The **"Crimson & Parchment"** design system was developed specifically to provide a high-contrast, low-fatigue environment for long-form transcription sessions.
 
-## Technical Specifications
-
-### Tech Stack & Rationale
-- **Framework**: Flutter (Desktop/Windows) — *Selected for its 60FPS rendering performance and native x64 compilation.*
-- **State Management**: Riverpod (StateNotifier) — *Enables a reactive, unidirectional data flow that keeps the playback timer, UI word cards, and preview state in perfect synchronization.*
-- **Audio Engine**: flutter_soloud (C++) — *Utilized for its low-level memory-mapped decoding, ensuring frame-accurate seeking at any playback speed.*
-- **Process Management**: FFmpeg — *The industrial standard for media analysis, used here for high-speed, asynchronous waveform peak extraction.*
-- **Typography**: Lexend and Noto Serif Ethiopic — *Chosen for their specialized optical kerning and superior ligature rendering for complex scripts.*
-
-### Key Infrastructure
-- `flutter_riverpod`: Handles the high-frequency state updates required for real-time playhead tracking.
-- `flutter_soloud`: Powers the high-performance audio scrubbing and speed-neutralization seeking logic.
-- `file_picker`: Integrated for professional file handling during session saves and exports.
-- `window_manager`: Handles native Windows window lifecycle and the custom integrated title bar.
+## Technical Architecture
+- **Framework (Flutter)**: Compiles to native x64 code for 60FPS fluid rendering. Handles complex Ethiopic typography through specialized layout engines.
+- **State Management (Riverpod)**: Powers the high-frequency state updates required for real-time playhead tracking. Ensures the playback timer, word cards, and preview state remain in perfect synchronization.
+- **Audio Engine (SoLoud C++)**: Utilized for low-level memory-mapped decoding. This guarantees frame-accurate seeking and stable variable-speed playback (0.5x - 1.5x) through advanced speed-neutralization logic.
+- **Media Analysis (FFmpeg)**: The industry standard for media processing, embedded to handle high-speed, asynchronous waveform peak extraction and streaming PCM analysis.
+- **Native Integration (Window Manager)**: Extends Flutter's desktop capabilities to intercept system-level window signals, allowing for custom title bars and reliable process cleanup on exit.
+- **Typography (Lexend & Noto Serif)**: Specialized fonts chosen for their optical kerning and superior Ethiopic ligature rendering, providing a high-contrast, low-fatigue studio environment.
 
 ## Prerequisites
 

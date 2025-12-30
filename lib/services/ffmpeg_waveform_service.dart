@@ -88,55 +88,87 @@ class FfmpegWaveformService {
   }
 
   Future<List<double>> _runFfmpeg(String audioPath) async {
-    // Use low sample rate for fast processing
+    // 1. Get total file length to estimate samples per peak
+    final List<String> probeArgs = [
+      '-i',
+      audioPath,
+      '-show_entries',
+      'format=duration',
+      '-v',
+      'quiet',
+      '-of',
+      'csv=p=0',
+    ];
+
+    double duration = 0;
+    try {
+      final probeResult = await Process.run('ffprobe', probeArgs);
+      duration = double.tryParse(probeResult.stdout.toString().trim()) ?? 0;
+    } catch (e) {
+      _log("Probing failed, estimation will be less accurate.");
+    }
+
+    // Target sample rate for analysis
+    const int sampleRate = 4000;
+    final totalSamples = (duration * sampleRate).toInt();
+    final samplesPerPeak = totalSamples > 0
+        ? (totalSamples / targetPeakCount).ceil()
+        : 1000; // Fallback
+
     final List<String> args = [
       '-i', audioPath,
       '-ac', '1', // Mono
-      '-ar', '4000', // 4kHz (low for speed)
+      '-ar', '$sampleRate',
       '-f', 's16le',
       '-acodec', 'pcm_s16le',
       'pipe:1',
     ];
 
-    _log("Running FFmpeg...");
-    final result = await Process.run('ffmpeg', args, stdoutEncoding: null);
+    _log("Starting FFmpeg stream...");
+    final process = await Process.start('ffmpeg', args);
+    _activeProcesses.add(process);
 
-    if (result.exitCode != 0) {
-      _log("FFmpeg error");
-      return [];
-    }
-
-    final Uint8List rawBytes = result.stdout as Uint8List;
-    return _processPcm(rawBytes);
-  }
-
-  List<double> _processPcm(Uint8List rawBytes) {
-    if (rawBytes.isEmpty) return [];
-
-    final sampleCount = rawBytes.length ~/ 2;
-    if (sampleCount < targetPeakCount) return [];
-
-    final samplesPerPeak = sampleCount ~/ targetPeakCount;
     final peaks = List<double>.filled(targetPeakCount, 0.0);
-    final data = ByteData.view(rawBytes.buffer);
+    int currentPeakIndex = 0;
+    int samplesInCurrentPeak = 0;
+    int maxValInPeak = 0;
 
-    for (int p = 0; p < targetPeakCount; p++) {
-      int maxVal = 0;
-      final startSample = p * samplesPerPeak;
-      final endSample = (p + 1) * samplesPerPeak;
+    try {
+      await for (final chunk in process.stdout) {
+        final uint8List = Uint8List.fromList(chunk);
+        final data = ByteData.view(uint8List.buffer);
+        for (int i = 0; i < chunk.length - 1; i += 2) {
+          final sample = data.getInt16(i, Endian.little).abs();
+          if (sample > maxValInPeak) maxValInPeak = sample;
 
-      for (
-        int s = startSample;
-        s < endSample && s * 2 + 1 < rawBytes.length;
-        s++
-      ) {
-        final sample = data.getInt16(s * 2, Endian.little).abs();
-        if (sample > maxVal) maxVal = sample;
+          samplesInCurrentPeak++;
+
+          if (samplesInCurrentPeak >= samplesPerPeak &&
+              currentPeakIndex < targetPeakCount) {
+            peaks[currentPeakIndex] = maxValInPeak / 32768.0;
+            currentPeakIndex++;
+            samplesInCurrentPeak = 0;
+            maxValInPeak = 0;
+          }
+        }
       }
-      peaks[p] = maxVal / 32768.0;
+
+      // Handle the last peak if we have remaining samples
+      if (currentPeakIndex < targetPeakCount && samplesInCurrentPeak > 0) {
+        peaks[currentPeakIndex] = maxValInPeak / 32768.0;
+      }
+    } catch (e) {
+      _log("Streaming extraction error: $e");
+    } finally {
+      _activeProcesses.remove(process);
     }
 
-    _log("Extracted $targetPeakCount peaks");
+    final exitCode = await process.exitCode;
+    if (exitCode != 0) {
+      _log("FFmpeg exited with error code $exitCode");
+    }
+
+    _log("Extracted ${peaks.length} peaks via streaming.");
     return peaks;
   }
 }

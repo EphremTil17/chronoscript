@@ -11,6 +11,7 @@ import 'package:chronoscript/ui/widgets/verse_sidebar.dart';
 import 'package:chronoscript/ui/widgets/liturgy_hub.dart';
 import 'package:chronoscript/ui/widgets/custom_title_bar.dart';
 import 'package:chronoscript/ui/widgets/preview_tab.dart';
+import 'package:chronoscript/ui/widgets/log_overlay.dart';
 import 'package:file_picker/file_picker.dart';
 
 class TappingPage extends ConsumerStatefulWidget {
@@ -577,6 +578,23 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                     style: GoogleFonts.lexend(fontSize: 10, color: Colors.grey),
                   ),
                   const SizedBox(width: 16),
+                  // Log Viewer Icon
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => LogOverlay.show(context),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Icon(
+                          Icons.terminal,
+                          size: 18,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   // Keyboard Shortcuts Icon
                   Material(
                     color: Colors.transparent,

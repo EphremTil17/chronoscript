@@ -17,7 +17,6 @@ class AudioController {
   final _positionController = StreamController<Duration>.broadcast();
   final _playerStateController = StreamController<PlayerState>.broadcast();
   final _waveformController = StreamController<List<double>?>.broadcast();
-  final _logController = StreamController<String>.broadcast();
   final _ffmpegErrorController = StreamController<String>.broadcast();
   double _playbackSpeed = 1.0;
   double get playbackSpeed => _playbackSpeed;
@@ -25,7 +24,6 @@ class AudioController {
   // Expose streams
   Stream<Duration> get positionStream => _positionController.stream;
   Stream<List<double>?> get waveformStream => _waveformController.stream;
-  Stream<String> get logStream => _logController.stream;
   Stream<String> get ffmpegErrorStream => _ffmpegErrorController.stream;
 
   Duration _currentPosition = Duration.zero;
@@ -88,6 +86,7 @@ class AudioController {
     _logger.info("Loading new source...");
     try {
       String pathPayload = path;
+      final originalFile = File(path);
 
       // Workaround for Windows non-ASCII path support
       if (Platform.isWindows && _hasNonAscii(path)) {
@@ -100,17 +99,22 @@ class AudioController {
             "temp_audio_${DateTime.now().millisecondsSinceEpoch}.$ext";
         final tempPath = "${tempDir.path}\\$safeName";
 
-        final originalFile = File(path);
         _tempFile = await originalFile.copy(tempPath);
         pathPayload = _tempFile!.path;
         _logger.info("Created temp file at: $pathPayload");
       }
 
+      final durationCheck = await originalFile.length();
+      // Use disk mode for files likely to be large (roughly > 1 minute of CD quality audio)
+      final useDiskMode = durationCheck > 10 * 1024 * 1024;
+
       _currentSource = await SoLoud.instance.loadFile(
         pathPayload,
-        mode: LoadMode.memory,
+        mode: useDiskMode ? LoadMode.disk : LoadMode.memory,
       );
-      _logger.info("Source loaded in memory mode. Getting length...");
+      _logger.info(
+        "Source loaded in ${useDiskMode ? 'disk' : 'memory'} mode. Getting length...",
+      );
       _totalDuration = SoLoud.instance.getLength(_currentSource!);
       _logger.info("Audio loaded successfully. Duration: $_totalDuration");
 
@@ -150,7 +154,6 @@ class AudioController {
 
   void _log(String message) {
     _logger.info(message);
-    _logController.add(message);
   }
 
   bool _hasNonAscii(String str) {
@@ -246,7 +249,6 @@ class AudioController {
     _positionController.close();
     _playerStateController.close();
     _waveformController.close();
-    _logController.close();
     _ffmpegErrorController.close();
   }
 }

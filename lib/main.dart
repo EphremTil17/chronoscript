@@ -5,10 +5,17 @@ import 'services/font_service.dart';
 import 'services/ffmpeg_waveform_service.dart';
 import 'ui/startup_screen.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
+import 'services/log_service.dart';
+import 'package:logging/logging.dart';
 import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Global Logging
+  LogService().init();
+  final logger = Logger('ChronoScript');
+  logger.info("Application starting...");
 
   // Desktop Window Configuration
   await windowManager.ensureInitialized();
