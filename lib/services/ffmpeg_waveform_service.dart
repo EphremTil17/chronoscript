@@ -11,8 +11,8 @@ class FfmpegWaveformService {
   static final _logger = Logger('FfmpegWaveformService');
   final void Function(String message)? onLog;
 
-  // Target number of peaks for visualization - keep this small for performance
-  static const int targetPeakCount = 400;
+  // Target density for visualization - 100 peaks per second gives sub-frame detail (10ms)
+  static const int peaksPerSecond = 100;
 
   static final Set<Process> _activeProcesses = {};
 
@@ -50,25 +50,26 @@ class FfmpegWaveformService {
         final List<dynamic> data = jsonDecode(content);
         _log("Loaded ${data.length} peaks from cache");
 
-        // Ensure cache matches current target count
-        if (data.length == targetPeakCount) {
-          return data.map((e) => (e as num).toDouble()).toList();
-        }
-        _log(
-          "Cache mismatch (${data.length} != $targetPeakCount), re-extracting...",
-        );
+        // Return cached data - we don't strictly check length here as
+        // older fixed-length caches will just be upgraded to rate-based
+        // if the sample happens to match or if user clears cache.
+        return data.map((e) => (e as num).toDouble()).toList();
       } catch (_) {
         // Re-extract if cache is corrupted
       }
     }
 
     // 2. Extract using FFmpeg
-    _log("Extracting waveform...");
+    _log("Extracting high-density waveform...");
+    final stopwatch = Stopwatch()..start();
     final peaks = await _runFfmpeg(audioPath);
+    stopwatch.stop();
 
     if (peaks.isEmpty) {
       return [];
     }
+
+    _log("Extraction complete in ${stopwatch.elapsedMilliseconds}ms");
 
     // 3. Cache result
     final cacheDir = cacheFile.parent;
@@ -84,7 +85,7 @@ class FfmpegWaveformService {
   Future<File> _getCacheFile(String audioPath) async {
     final dir = await getApplicationDocumentsDirectory();
     final name = p.basenameWithoutExtension(audioPath);
-    return File(p.join(dir.path, 'chronoscript_waveforms', '$name.peaks'));
+    return File(p.join(dir.path, 'chronoscript_waveforms', '$name.v3.peaks'));
   }
 
   Future<List<double>> _runFfmpeg(String audioPath) async {
@@ -108,12 +109,15 @@ class FfmpegWaveformService {
       _log("Probing failed, estimation will be less accurate.");
     }
 
+    if (duration <= 0) return [];
+
+    final int totalPeaks = (duration * peaksPerSecond).ceil();
+    _log("Target peak count: $totalPeaks (at ${peaksPerSecond}pps)");
+
     // Target sample rate for analysis
     const int sampleRate = 4000;
     final totalSamples = (duration * sampleRate).toInt();
-    final samplesPerPeak = totalSamples > 0
-        ? (totalSamples / targetPeakCount).ceil()
-        : 1000; // Fallback
+    final samplesPerPeak = (totalSamples / totalPeaks).ceil();
 
     final List<String> args = [
       '-i', audioPath,
@@ -128,33 +132,63 @@ class FfmpegWaveformService {
     final process = await Process.start('ffmpeg', args);
     _activeProcesses.add(process);
 
-    final peaks = List<double>.filled(targetPeakCount, 0.0);
+    // Drain stderr to prevent deadlock
+    process.stderr.transform(utf8.decoder).listen((data) {
+      if (data.contains('Error') || data.contains('error')) {
+        _log("FFmpeg stderr: ${data.trim()}");
+      }
+    });
+
+    final peaks = List<double>.filled(totalPeaks, 0.0);
     int currentPeakIndex = 0;
     int samplesInCurrentPeak = 0;
     int maxValInPeak = 0;
 
+    // Buffer to handle samples split across chunks
+    final carryOver = <int>[];
+
     try {
       await for (final chunk in process.stdout) {
-        final uint8List = Uint8List.fromList(chunk);
-        final data = ByteData.view(uint8List.buffer);
-        for (int i = 0; i < chunk.length - 1; i += 2) {
+        // combine with carry-over from previous chunk
+        Uint8List bytes;
+        if (carryOver.isEmpty) {
+          bytes = Uint8List.fromList(chunk);
+        } else {
+          bytes = Uint8List.fromList([...carryOver, ...chunk]);
+          carryOver.clear();
+        }
+
+        final data = ByteData.view(bytes.buffer);
+        int i = 0;
+        for (; i + 1 < bytes.length; i += 2) {
           final sample = data.getInt16(i, Endian.little).abs();
           if (sample > maxValInPeak) maxValInPeak = sample;
 
           samplesInCurrentPeak++;
 
           if (samplesInCurrentPeak >= samplesPerPeak &&
-              currentPeakIndex < targetPeakCount) {
+              currentPeakIndex < totalPeaks) {
             peaks[currentPeakIndex] = maxValInPeak / 32768.0;
             currentPeakIndex++;
             samplesInCurrentPeak = 0;
             maxValInPeak = 0;
+
+            if (currentPeakIndex % 10000 == 0) {
+              _log(
+                "Extraction progress: $currentPeakIndex / $totalPeaks peaks...",
+              );
+            }
           }
+        }
+
+        // store remaining byte if any
+        if (i < bytes.length) {
+          carryOver.add(bytes[i]);
         }
       }
 
       // Handle the last peak if we have remaining samples
-      if (currentPeakIndex < targetPeakCount && samplesInCurrentPeak > 0) {
+      if (currentPeakIndex < totalPeaks && samplesInCurrentPeak > 0) {
         peaks[currentPeakIndex] = maxValInPeak / 32768.0;
       }
     } catch (e) {

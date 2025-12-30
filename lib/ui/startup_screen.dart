@@ -209,15 +209,22 @@ class _StartupScreenState extends State<StartupScreen> {
                         ),
                       )
                     else if (!_ready)
-                      Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: crimson,
+                      Column(
+                        children: [
+                          LinearProgressIndicator(
+                            backgroundColor: crimson.withValues(alpha: 0.1),
+                            valueColor: const AlwaysStoppedAnimation(crimson),
+                            minHeight: 2,
                           ),
-                        ),
+                          const SizedBox(height: 12),
+                          Text(
+                            "Hardening environment...",
+                            style: GoogleFonts.lexend(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
                   ],
                 ),

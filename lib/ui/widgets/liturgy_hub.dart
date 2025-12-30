@@ -49,6 +49,17 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
     return "$minutes:$seconds.$millis3";
   }
 
+  String _formatTotalDuration(int ms) {
+    if (ms < 0) ms = 0;
+    final duration = Duration(milliseconds: ms);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return hours > 0
+        ? "${hours.toString().padLeft(2, '0')}:$minutes:$seconds"
+        : "$minutes:$seconds";
+  }
+
   void _setSpeed(double speed) {
     setState(() => _speed = speed);
     final audioCtrl = ref.read(audioControllerProvider);
@@ -72,18 +83,43 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // TIMER
-              Padding(
-                padding: const EdgeInsets.only(left: 4.0, bottom: 4),
-                child: Text(
-                  _formatDuration(widget.liveMs),
-                  style: GoogleFonts.lexend(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF2C2C2C),
-                    fontFeatures: [const FontFeature.tabularFigures()],
+              // TIMER + ZOOM
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  SizedBox(
+                    width:
+                        210, // Fixed width prevents buttons from jittering as milliseconds change
+                    child: Text(
+                      _formatDuration(widget.liveMs),
+                      style: GoogleFonts.lexend(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF2C2C2C),
+                        fontFeatures: [const FontFeature.tabularFigures()],
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  _buildZoomButton(
+                    icon: Icons.zoom_in_rounded,
+                    onPressed: () {
+                      final zoom = ref.read(waveformZoomProvider);
+                      ref.read(waveformZoomProvider.notifier).state =
+                          (zoom * 1.5).clamp(1.0, 50.0);
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                  _buildZoomButton(
+                    icon: Icons.zoom_out_rounded,
+                    onPressed: () {
+                      final zoom = ref.read(waveformZoomProvider);
+                      ref.read(waveformZoomProvider.notifier).state =
+                          (zoom / 1.5).clamp(1.0, 50.0);
+                    },
+                  ),
+                ],
               ),
 
               // CONTROLS ROW
@@ -126,10 +162,34 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
           // RIGHT COLUMN: Waveform (Expanded)
           Expanded(
             child: SizedBox(
-              height: 80,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: const WaveformScrubber(),
+              height: 100, // Fixed height to satisfy Column constraints
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: const WaveformScrubber(),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  StreamBuilder<Duration>(
+                    stream: ref.watch(audioControllerProvider).positionStream,
+                    builder: (context, _) {
+                      final total = ref
+                          .watch(audioControllerProvider)
+                          .totalDuration;
+                      return Text(
+                        _formatTotalDuration(total.inMilliseconds),
+                        style: GoogleFonts.lexend(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),
@@ -376,6 +436,31 @@ class _LiturgyControlHubState extends ConsumerState<LiturgyControlHub> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildZoomButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    const kCrimson = Color(0xFF8B1538);
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      elevation: 1,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        hoverColor: kCrimson.withValues(alpha: 0.1),
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(icon, size: 20, color: kCrimson),
+        ),
+      ),
     );
   }
 }
