@@ -2,7 +2,31 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.2.0] - 2025-12-29
+## [2.2.3] - 2025-12-29
+### Added
+- **In-App Log Viewer**: Added a new diagnostic console accessible via a "System Logs" terminal icon.
+    - Captures all application logs from startup (including FFmpeg extraction data).
+    - Branded console aesthetic with `Fira Code` typography and crimson highlighting.
+    - Persistent logs available on both the Home Page and within the Studio session.
+- **Smooth Audio Scrubbing**: Refactored the waveform scrubber to eliminate audio jitters. The playhead now moves instantaneously with the mouse, while the actual audio seek is deferred until the drag completes.
+
+## [2.2.2] - 2025-12-29
+### Fixed
+- **Memory Stabilization**: Resolved a 700MB+ RAM spike in Release mode by restoring surgical optimizations:
+    - Implemented a 1MB file-size threshold (approx. 1 min of audio) to automatically switch from memory-loading to **disk-streaming**.
+    - Refactored waveform extraction to stream raw audio in **64KB chunks**, preventing large-file buffering in the Dart heap.
+
+## [2.2.1] - 2025-12-29
+### Added
+- **Premium Branding**: Enhanced Home Page with high-fidelity "Book-and-Pulse" logo in a modern rounded frame.
+- **Visual Identity**: Integrated branded icons into the Startup Screen and Windows Taskbar.
+- **Deployment Strategy**: Switched to Inno Setup for a simplified, certificate-free Windows installation experience.
+
+### Changed
+- **High-Res Iconography**: Upgraded the icon generation system to support 256px ultra-high-resolution output.
+- **UI Refinements**: Adjusted logo sizing and spacing for optimal optical balance.
+
+## [2.2.0] - 2025-12-23
 
 ### Added
 - **Session Restoration System**: Added "RESUME EXISTING SESSION" functionality on the Home Page, allowing operators to pick up exactly where they left off with full state recovery (selected verse, tab index, and synchronization progress).

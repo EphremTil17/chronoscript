@@ -9,6 +9,7 @@ import 'package:chronoscript/services/export_service.dart';
 import 'package:chronoscript/services/ingestion_service.dart';
 import 'package:chronoscript/providers/app_state.dart';
 import 'package:chronoscript/controllers/audio_controller.dart';
+import 'package:chronoscript/ui/widgets/log_overlay.dart';
 import 'package:chronoscript/ui/tapping_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -307,7 +308,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(color: kCrimson, width: 2.5),
                       ),
@@ -449,6 +450,48 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ],
                 ),
               ),
+            ),
+          ),
+          // Log Footer
+          Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => LogOverlay.show(context),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.terminal,
+                            size: 14,
+                            color: Colors.black.withValues(alpha: 0.3),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "SYSTEM LOGS",
+                            style: GoogleFonts.lexend(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black.withValues(alpha: 0.3),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

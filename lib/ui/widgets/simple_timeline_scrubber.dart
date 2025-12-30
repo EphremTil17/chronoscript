@@ -3,11 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/audio_controller.dart';
 
 /// Efficient waveform scrubber widget with tap-to-seek and drag functionality.
-class WaveformScrubber extends ConsumerWidget {
+/// Optimized to only seek on drag-end to prevent audio jitters.
+class WaveformScrubber extends ConsumerStatefulWidget {
   const WaveformScrubber({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WaveformScrubber> createState() => _WaveformScrubberState();
+}
+
+class _WaveformScrubberState extends ConsumerState<WaveformScrubber> {
+  double? _dragProgress;
+
+  @override
+  Widget build(BuildContext context) {
     final audioCtrl = ref.watch(audioControllerProvider);
 
     return StreamBuilder<List<double>?>(
@@ -27,31 +35,42 @@ class WaveformScrubber extends ConsumerWidget {
                   .clamp(0.0, 1.0);
             }
 
+            // Use drag progress if active for visual feedback
+            final displayProgress = _dragProgress ?? progress;
+
             return LayoutBuilder(
               builder: (context, constraints) {
                 return GestureDetector(
+                  onHorizontalDragStart: (_) {
+                    setState(() => _dragProgress = progress);
+                  },
                   onHorizontalDragUpdate: (details) {
-                    _seek(
-                      details.localPosition.dx,
-                      constraints.maxWidth,
-                      duration,
-                      audioCtrl,
-                    );
+                    setState(() {
+                      _dragProgress =
+                          (details.localPosition.dx / constraints.maxWidth)
+                              .clamp(0.0, 1.0);
+                    });
+                  },
+                  onHorizontalDragEnd: (_) {
+                    if (_dragProgress != null) {
+                      _finalizeSeek(_dragProgress!, duration, audioCtrl);
+                      setState(() => _dragProgress = null);
+                    }
+                  },
+                  onHorizontalDragCancel: () {
+                    setState(() => _dragProgress = null);
                   },
                   onTapUp: (details) {
-                    _seek(
-                      details.localPosition.dx,
-                      constraints.maxWidth,
-                      duration,
-                      audioCtrl,
-                    );
+                    final p = (details.localPosition.dx / constraints.maxWidth)
+                        .clamp(0.0, 1.0);
+                    _finalizeSeek(p, duration, audioCtrl);
                   },
                   child: RepaintBoundary(
                     child: CustomPaint(
                       size: Size(constraints.maxWidth, constraints.maxHeight),
                       painter: WaveformPainter(
                         peaks: peaks,
-                        progress: progress,
+                        progress: displayProgress,
                       ),
                     ),
                   ),
@@ -64,9 +83,7 @@ class WaveformScrubber extends ConsumerWidget {
     );
   }
 
-  void _seek(double x, double width, Duration total, AudioController ctrl) {
-    if (width <= 0) return;
-    final p = (x / width).clamp(0.0, 1.0);
+  void _finalizeSeek(double p, Duration total, AudioController ctrl) {
     ctrl.seek(Duration(milliseconds: (total.inMilliseconds * p).toInt()));
   }
 }
