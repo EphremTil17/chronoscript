@@ -8,14 +8,15 @@ In various fields such as modern education, accessibility, and cultural preserva
 
 ## Key Features
 
-### FFmpeg-Powered Waveform Visualization
-The application features a custom-built waveform extraction system that utilizes FFmpeg for high-speed audio analysis. Unlike standard library-based visualizations, our implementation:
-- Performs asynchronous peak extraction using optimized PCM sample processing.
-- Downsamples audio to 4kHz to ensure near-instant visualization of hour-long recordings.
-- Employs a fixed-resolution caching layer (200 high-fidelity peaks) to minimize CPU overhead and storage footprint.
-- Utilizes `RepaintBoundary` and cached `Paint` objects for 60FPS fluid scrubbing on desktop hardware.
+### Waveform Hyper-Zoom
+The application features a custom-built FFmpeg-powered waveform extraction system that utilizes FFmpeg for high-speed audio analysis. The system supports dynamic, frame-accurate zooming:
+- **High-Density Extraction**: Performed at 100 peaks per second (10ms resolution), providing the surgical granularity needed for sub-frame word placement.
+- **Quantized Max-Sampling**: A specialized viewport rendering that eliminates visual jitter by locking sampling buckets to integer peak boundaries.
+- **60FPS Hybrid Rendering**: Automatically switches between linear interpolation and raw peak drawing based on zoom depth to maintain buttery-smooth visualization.
+- **Interactive Controls**: Supports standard `Ctrl + MouseWheel` for zooming, horizontal panning, and playhead auto-centering. Manual +/- magnifying and a jitter-free timecode display centered in a fixed-width layout.
+- **Diagnostic Console**: A dedicated diagnostic console (accessible via the terminal icon) provides real-time visibility into the application's internal processes.
 
-### Studio Session Persistence & Restoration
+### Studio Session Persistence & Intelligent Restoration
 ChronoScript Studio now supports full session persistence and intelligent restoration. 
 - **Auto-Save**: A background persistence layer automatically backups progress every 60 seconds to a localized auto-save file.
 - **Manual Save**: Operators can save their work to a custom location to resume later.
@@ -26,11 +27,6 @@ ChronoScript Studio now supports full session persistence and intelligent restor
 The application provides real-time feedback on project completion to ensure production targets are met.
 - **Overall Completion Header**: A persistent progress bar at the top of the studio sidebar summarizes total project synchronization.
 - **Verse-Level Metrics**: Every verse in the navigation list displays a numerical percentage and a mini progress bar, with 100% complete sections clearly highlighted in green.
-
-### In-App System Logs and Smooth & Silent Scrubbing
-A dedicated diagnostic console (accessible via the terminal icon) provides real-time visibility into the application's internal processes.
-- **Persistent Tracking**: Captures all events from startup, including prerequisite checks and FFmpeg extraction logs.
-- **Jitter-Free Drags**: Multi-seek events are suppressed during drags, eliminating background audio jitters.
 
 ### Karaoke Style Preview Mode
 A dedicated "Preview" tab provides a real-time, interactive environment to verify synchronization quality.
@@ -83,20 +79,18 @@ The application requires FFmpeg to be installed and accessible via the system PA
    - Scrub through the optimized waveform to verify word placements. Individual word cards will highlight in alignment with the audio playhead.
 6. **Export**: Export the final synchronized outputs (JSON & Tagged Markdown) once the verse is fully perfected.
 
-## Local Development
+## Development & Deployment
 
-To run the project locally, ensure you have the Flutter SDK installed and configured for Windows desktop development.
-
-```bash
-# Clone the repository
-git clone [repository-url]
-
-# Install dependencies
+### Local Setup
+```powershell
 flutter pub get
-
-# Generate JSON models
 flutter pub run build_runner build --delete-conflicting-outputs
-
-# Run for Windows
 flutter run -d windows
 ```
+
+### Production Release
+1. **Build Executable**:
+   ```powershell
+   flutter build windows --release --build-name=x.x.x --build-number=1 --tree-shake-icons --obfuscate --split-debug-info=build/windows/debug_info
+   ```
+2. **Generate Installer**: Compile `windows\installer_script.iss` using **Inno Setup** to produce the setup executable.

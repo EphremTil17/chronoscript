@@ -2,6 +2,22 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2025-12-29
+### Added
+- **Waveform Stability (Anti-Jitter)**:
+    - **Quantized Max-Sampling**: Implemented a specialized bucketing strategy that locks visual segments to integer peak boundaries, eliminating the "jiggling" artifact during high-zoom panning.
+    - **Sub-Pixel Interpolation**: Added a hybrid rendering mode that switches to raw peak drawing at extreme zoom levels (>20x) and linear interpolation for buttery-smooth visual flow.
+- **Extraction Hardening**:
+    - **Deadlock Resolution**: Refactored FFmpeg integration to actively drain `stderr`, preventing process hangs on long-form audio files (30m+).
+    - **Sample Alignment Fix**: Introduced a carry-over buffer for odd-byte chunks to ensure bit-perfect 16-bit PCM alignment during streaming analysis.
+    - **Progress Telemetry**: Added real-time extraction progress updates to the system logs (e.g., `Extraction progress: 50000 / 175000`).
+- **Shortcuts & Efficiency**:
+    - **L Key**: Added a dedicated hotkey to toggle the System Log overlay.
+    - **Ctrl + Scroll**: Documented and refined the mouse-wheel zoom interaction in the shortcuts dialog.
+- **UI Stability**:
+    - **Fixed-Width Timecode**: Wrapped the primary time display in a constant-width container (210px) to prevent layout shifting/jittering as milliseconds update.
+    - **Lexend Unification**: Standardized all numerical indicators (zoom level, duration, timestamps) to use Lexend for maximum readability.
+
 ## [2.2.3] - 2025-12-29
 ### Added
 - **In-App Log Viewer**: Added a new diagnostic console accessible via a "System Logs" terminal icon.

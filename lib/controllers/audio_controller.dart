@@ -243,6 +243,42 @@ class AudioController {
     _positionTimer?.cancel();
   }
 
+  Future<void> stopAndCleanup() async {
+    _logger.info("stopAndCleanup: Purging session resources...");
+    _stopPositionTimer();
+
+    if (_currentHandle != null) {
+      if (SoLoud.instance.getIsValidVoiceHandle(_currentHandle!)) {
+        SoLoud.instance.stop(_currentHandle!);
+      }
+      _currentHandle = null;
+    }
+
+    if (_currentSource != null) {
+      await SoLoud.instance.disposeSource(_currentSource!);
+      _currentSource = null;
+    }
+
+    if (_tempFile != null) {
+      try {
+        if (await _tempFile!.exists()) {
+          _logger.info("Deleting temp file: ${_tempFile!.path}");
+          await _tempFile!.delete();
+        }
+      } catch (e) {
+        _logger.warning("Could not delete temp file: $e");
+      }
+      _tempFile = null;
+    }
+
+    _currentWaveform = null;
+    _waveformController.add(null);
+    _currentPosition = Duration.zero;
+    _totalDuration = Duration.zero;
+    _positionController.add(Duration.zero);
+    _logger.info("Session resources purged.");
+  }
+
   void dispose() {
     _stopPositionTimer();
     SoLoud.instance.deinit();

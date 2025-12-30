@@ -92,6 +92,8 @@ class _TappingPageState extends ConsumerState<TappingPage> {
         audioCtrl.seekBackward(const Duration(seconds: 5));
       } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
         audioCtrl.seekBackward(const Duration(seconds: -5));
+      } else if (event.logicalKey == LogicalKeyboardKey.keyL) {
+        LogOverlay.show(context);
       }
     }
   }
@@ -191,8 +193,15 @@ class _TappingPageState extends ConsumerState<TappingPage> {
 
     // Cleanup and Exit
     final audioCtrl = ref.read(audioControllerProvider);
-    audioCtrl.pause();
-    ref.read(tappingProvider.notifier).setPlaying(false);
+
+    // 1. Explicitly purge heavy audio resources and temp files
+    await audioCtrl.stopAndCleanup();
+
+    // 2. Invalidate state providers to reclaim RAM
+    ref.invalidate(tappingProvider);
+    ref.invalidate(audioPathProvider);
+    ref.invalidate(waveformZoomProvider);
+    ref.invalidate(waveformScrollProvider);
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -644,7 +653,9 @@ class _TappingPageState extends ConsumerState<TappingPage> {
             _buildShortcutRow("P", "Play / Pause Audio"),
             _buildShortcutRow("Left Arrow", "Rewind 5 Seconds"),
             _buildShortcutRow("Right Arrow", "Forward 5 Seconds"),
+            _buildShortcutRow("L", "Show System Logs"),
             const Divider(height: 32),
+            _buildShortcutRow("Ctrl + Scroll", "Zoom Waveform (Hyper-Zoom)"),
             _buildShortcutRow("Ctrl + Click", "Multi-Select Words"),
             _buildShortcutRow("Shift + Click", "Select Range of Words"),
           ],

@@ -279,3 +279,7 @@ final tappingProvider = StateNotifierProvider<TappingNotifier, TappingState>((
 
 // For loading audio file path
 final audioPathProvider = StateProvider<String?>((ref) => null);
+
+// Viewport UI state (Global providers to keep buttons & scrubber in sync)
+final waveformZoomProvider = StateProvider<double>((ref) => 1.0);
+final waveformScrollProvider = StateProvider<double>((ref) => 0.5);

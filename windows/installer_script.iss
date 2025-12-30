@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "ChronoScript Studio"
-#define MyAppVersion "2.2.3"
+#define MyAppVersion "2.3.0"
 #define MyAppPublisher "Ephrem Til"
 #define MyAppExeName "chronoscript.exe"
 #define MyAppAssocName "ChronoScript Project"
@@ -25,7 +25,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 OutputDir=..\build\windows\x64\runner\Release
-OutputBaseFilename=ChronoScript_Setup_v2.2.3
+OutputBaseFilename=ChronoScript_Setup_v2.3.0
 SetupIconFile=runner\resources\app_icon.ico
 Compression=lzma
 SolidCompression=yes
