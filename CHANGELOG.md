@@ -2,6 +2,21 @@
 
 All notable changes to the ChronoScript Studio project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-01-05
+### Added
+- **Production-Ready Two-Tier Export System**:
+    - **Clean Export**: Added a dedicated **Export** button that outputs a lightweight ID-to-Time map for production use.
+    - **Context-Aware Naming**: Exported files now inherit the name of your source document (e.g., `kidan_synced_export.json` and `kidan_synced_export.md`), ensuring a professional and organized workflow.
+    - **Source Linking**: The production JSON now includes a `text_source` tag that dynamically points to the corresponding synced Markdown file.
+- **Dynamic Text Maintenance**:
+    - **Manual Refresh Logic**: Added a specialized "Refresh" button in the Sidebar to re-ingest the source text file.
+    - **Intelligent Word Stitching**: Implemented a global index-based algorithm that preserves your existing synchronization timestamps even after editing typos or structure in the external text file.
+- **Waveform Stability & Extraction**:
+    - **Anti-Jitter Strategy**: Implemented quantized peak-sampling to eliminate visual "jiggling" during high-zoom navigation.
+    - **Hardened Extraction**: Refactored FFmpeg integration to resolve deadlocks on long-form audio files and improved 16-bit PCM sample alignment during streaming analysis.
+- **UI & Aesthetics**:
+    - General UI cleanup and fixes
+
 ## [2.3.1] - 2025-12-29
 ### Added
 - **Waveform Stability (Anti-Jitter)**:

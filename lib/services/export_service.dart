@@ -34,8 +34,12 @@ class ExportService {
     return buffer.toString().trim();
   }
 
-  /// Generates the sync.json content
-  static String generateSyncJson(List<Verse> verses, {String? audioFileName}) {
+  /// Generates the sync.json content (Production "Clean Export")
+  static String generateSyncJson(
+    List<Verse> verses, {
+    String? audioFileName,
+    String? textFileName,
+  }) {
     final Map<String, dynamic> syncData = {};
 
     for (var verse in verses) {
@@ -46,17 +50,14 @@ class ExportService {
       }
     }
 
-    final sortedKeys = syncData.keys.toList()..sort();
-
-    final Map<String, dynamic> sortedSyncData = {};
-    for (var key in sortedKeys) {
-      sortedSyncData[key] = syncData[key];
-    }
-
+    // Output a lean, production-ready map
     final Map<String, dynamic> output = {
-      'metadata': _createMetadata(audioFileName: audioFileName),
-      'sync_data': sortedSyncData,
-      'annotations': {},
+      'metadata': {
+        'generator': 'ChronoScript Studio v2.4.0',
+        'exported_at': DateTime.now().toIso8601String(),
+        'text_source': textFileName ?? 'text_gz.md',
+      },
+      'sync_data': syncData,
     };
 
     return const JsonEncoder.withIndent('  ').convert(output);
@@ -66,6 +67,7 @@ class ExportService {
   static String generateProjectJson({
     required List<Verse> verses,
     required String? audioFilePath,
+    required String? textFilePath,
     required int selectedVerseIndex,
     required TappingTab currentTab,
   }) {
@@ -74,7 +76,10 @@ class ExportService {
         .toList();
 
     final Map<String, dynamic> output = {
-      'metadata': _createMetadata(audioFilePath: audioFilePath),
+      'metadata': _createMetadata(
+        audioFilePath: audioFilePath,
+        textFilePath: textFilePath,
+      ),
       'state': {
         'selected_verse_index': selectedVerseIndex,
         'current_tab': currentTab.name,
@@ -88,6 +93,7 @@ class ExportService {
   static Map<String, String> _createMetadata({
     String? audioFileName,
     String? audioFilePath,
+    String? textFilePath,
   }) {
     // Determine the best name: explicit name > derived from path > unknown
     String finalName = 'unknown';
@@ -100,8 +106,9 @@ class ExportService {
     return {
       'audio_file': finalName,
       'audio_file_path': audioFilePath ?? 'unknown',
+      'text_file_path': textFilePath ?? 'unknown',
       'last_modified': DateTime.now().toIso8601String(),
-      'generator': 'ChronoScript Studio v2.1.0',
+      'generator': 'ChronoScript Studio v2.4.0',
     };
   }
 
@@ -118,13 +125,22 @@ class ExportService {
   /// Saves both files to a selected directory
   static Future<void> exportFiles(
     String directoryPath,
-    List<Verse> verses,
-  ) async {
-    final taggedMd = generateTaggedMarkdown(verses);
-    final syncJson = generateSyncJson(verses);
+    List<Verse> verses, {
+    String? baseFileName,
+  }) async {
+    final base = (baseFileName != null && baseFileName != 'unknown')
+        ? baseFileName
+        : 'project';
 
-    final mdFile = File('$directoryPath/text_gz.md');
-    final jsonFile = File('$directoryPath/sync.json');
+    final exportName = '${base}_synced_export';
+    final mdName = '$exportName.md';
+    final jsonName = '$exportName.json';
+
+    final taggedMd = generateTaggedMarkdown(verses);
+    final syncJson = generateSyncJson(verses, textFileName: mdName);
+
+    final mdFile = File('$directoryPath/$mdName');
+    final jsonFile = File('$directoryPath/$jsonName');
 
     await mdFile.writeAsString(taggedMd);
     await jsonFile.writeAsString(syncJson);
@@ -135,12 +151,14 @@ class ExportService {
     required String filePath,
     required List<Verse> verses,
     required String? audioPath,
+    required String? textPath,
     required int selectedVerseIndex,
     required TappingTab currentTab,
   }) async {
     final jsonContent = generateProjectJson(
       verses: verses,
       audioFilePath: audioPath,
+      textFilePath: textPath,
       selectedVerseIndex: selectedVerseIndex,
       currentTab: currentTab,
     );
@@ -152,6 +170,7 @@ class ExportService {
   static Future<void> saveAutoSave({
     required List<Verse> verses,
     required String? audioPath,
+    required String? textPath,
     required int selectedVerseIndex,
     required TappingTab currentTab,
   }) async {
@@ -161,6 +180,7 @@ class ExportService {
       final projectJson = generateProjectJson(
         verses: verses,
         audioFilePath: audioPath,
+        textFilePath: textPath,
         selectedVerseIndex: selectedVerseIndex,
         currentTab: currentTab,
       );

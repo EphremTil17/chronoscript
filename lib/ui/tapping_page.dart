@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
+import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chronoscript/providers/app_state.dart';
 import 'package:chronoscript/controllers/audio_controller.dart';
 import 'package:chronoscript/services/export_service.dart';
+import 'package:chronoscript/services/ingestion_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:chronoscript/models/sync_word.dart';
 import 'package:chronoscript/ui/widgets/verse_sidebar.dart';
@@ -105,6 +108,7 @@ class _TappingPageState extends ConsumerState<TappingPage> {
     await ExportService.saveAutoSave(
       verses: state.verses,
       audioPath: audioPath,
+      textPath: ref.read(sourceTextPathProvider),
       selectedVerseIndex: state.selectedVerseIndex,
       currentTab: state.currentTab,
     );
@@ -126,6 +130,7 @@ class _TappingPageState extends ConsumerState<TappingPage> {
         filePath: outputFile,
         verses: state.verses,
         audioPath: audioPath,
+        textPath: ref.read(sourceTextPathProvider),
         selectedVerseIndex: state.selectedVerseIndex,
         currentTab: state.currentTab,
       );
@@ -143,6 +148,39 @@ class _TappingPageState extends ConsumerState<TappingPage> {
       return true;
     }
     return false;
+  }
+
+  Future<void> _manualExport() async {
+    final state = ref.read(tappingProvider);
+    final textPath = ref.read(sourceTextPathProvider);
+
+    String? baseName;
+    if (textPath != null && textPath != 'unknown') {
+      baseName = p.basenameWithoutExtension(textPath);
+    }
+
+    String? directoryPath = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Select Export Directory',
+    );
+
+    if (directoryPath != null) {
+      await ExportService.exportFiles(
+        directoryPath,
+        state.verses,
+        baseFileName: baseName,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Production files (${baseName ?? 'project'}_synced_export) exported!",
+              style: GoogleFonts.lexend(),
+            ),
+            backgroundColor: Colors.green.shade800,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _exitToMainMenu() async {
@@ -208,6 +246,52 @@ class _TappingPageState extends ConsumerState<TappingPage> {
     }
   }
 
+  void _refreshText() async {
+    final textPath = ref.read(sourceTextPathProvider);
+    if (textPath == null || textPath == 'unknown') {
+      _showCompactError("Source text path unknown. Cannot refresh.");
+      return;
+    }
+
+    if (!await File(textPath).exists()) {
+      _showCompactError("Original text file not found at: $textPath");
+      return;
+    }
+
+    try {
+      final freshVerses = await IngestionService.ingestFile(textPath);
+      ref.read(tappingProvider.notifier).refreshTextFromFile(freshVerses);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Text refreshed! Existing timestamps preserved.",
+              style: GoogleFonts.lexend(),
+            ),
+            backgroundColor: Colors.green.shade800,
+          ),
+        );
+      }
+    } catch (e) {
+      _showCompactError("Refresh failed: $e");
+    }
+  }
+
+  void _showCompactError(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            msg.replaceAll("Exception: ", ""),
+            style: GoogleFonts.lexend(),
+          ),
+          backgroundColor: Colors.red.shade900,
+        ),
+      );
+    }
+  }
+
   void _onVerseSelected(int index) {
     ref.read(tappingProvider.notifier).selectVerse(index);
     final verse = ref.read(tappingProvider).verses[index];
@@ -252,6 +336,7 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                       verses: state.verses,
                       selectedIndex: state.selectedVerseIndex,
                       onVerseSelected: _onVerseSelected,
+                      onRefreshText: _refreshText,
                       isLocked: isSidebarLocked,
                     ),
                   ),
@@ -329,6 +414,46 @@ class _TappingPageState extends ConsumerState<TappingPage> {
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
                                               color: const Color(0xFF8B1538),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Export Button
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: _manualExport,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.green.shade800
+                                              .withValues(alpha: 0.3),
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.ios_share,
+                                            size: 18,
+                                            color: Colors.green.shade800,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "Export",
+                                            style: GoogleFonts.lexend(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.green.shade800,
                                             ),
                                           ),
                                         ],

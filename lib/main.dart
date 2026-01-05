@@ -5,6 +5,7 @@ import 'services/font_service.dart';
 import 'services/ffmpeg_waveform_service.dart';
 import 'ui/startup_screen.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'services/log_service.dart';
 import 'package:logging/logging.dart';
 import 'dart:io';
@@ -99,6 +100,17 @@ class _ChronoScriptAppState extends State<ChronoScriptApp> with WindowListener {
           secondary: const Color(0xFF795548),
         ),
         scaffoldBackgroundColor: const Color(0xFFFDF5E6),
+        tooltipTheme: TooltipThemeData(
+          textStyle: GoogleFonts.lexend(
+            fontSize: 12,
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2C2C).withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFFFDF5E6),
           elevation: 0,

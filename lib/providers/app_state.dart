@@ -269,6 +269,37 @@ class TappingNotifier extends StateNotifier<TappingState> {
     );
     state = state.copyWith(verses: updatedVerses);
   }
+
+  /// Re-ingests the text from a fresh list of verses and 'stitches'
+  /// existing timestamps onto the new tokens using index-based mapping.
+  void refreshTextFromFile(List<Verse> freshVerses) {
+    if (state.verses.isEmpty) {
+      state = state.copyWith(verses: freshVerses);
+      return;
+    }
+
+    final oldWords = state.verses.expand((v) => v.words).toList();
+    int globalIdx = 0;
+
+    final stitchedVerses = freshVerses.map((v) {
+      final updatedWords = v.words.map((w) {
+        if (globalIdx < oldWords.length) {
+          final oldW = oldWords[globalIdx];
+          final updated = w.copyWith(
+            startTime: oldW.startTime,
+            endTime: oldW.endTime,
+          );
+          globalIdx++;
+          return updated;
+        }
+        globalIdx++;
+        return w;
+      }).toList();
+      return v.copyWith(words: updatedWords);
+    }).toList();
+
+    state = state.copyWith(verses: stitchedVerses);
+  }
 }
 
 final tappingProvider = StateNotifierProvider<TappingNotifier, TappingState>((
@@ -277,8 +308,9 @@ final tappingProvider = StateNotifierProvider<TappingNotifier, TappingState>((
   return TappingNotifier();
 });
 
-// For loading audio file path
+// For loading text/audio file paths
 final audioPathProvider = StateProvider<String?>((ref) => null);
+final sourceTextPathProvider = StateProvider<String?>((ref) => null);
 
 // Viewport UI state (Global providers to keep buttons & scrubber in sync)
 final waveformZoomProvider = StateProvider<double>((ref) => 1.0);

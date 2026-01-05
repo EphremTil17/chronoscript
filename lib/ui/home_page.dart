@@ -11,6 +11,8 @@ import 'package:chronoscript/providers/app_state.dart';
 import 'package:chronoscript/controllers/audio_controller.dart';
 import 'package:chronoscript/ui/widgets/log_overlay.dart';
 import 'package:chronoscript/ui/tapping_page.dart';
+import 'package:logging/logging.dart';
+import 'package:chronoscript/models/verse.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -64,6 +66,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       // 3. Store Metadata
       ref.read(audioPathProvider.notifier).state = _audioPath!;
+      ref.read(sourceTextPathProvider.notifier).state = _textPath!;
 
       // 4. Navigate
       if (mounted) {
@@ -180,7 +183,33 @@ class _HomePageState extends ConsumerState<HomePage> {
       ref.read(audioPathProvider.notifier).state = audioPath;
 
       // 2. Initialise State
-      final loadedState = TappingState.fromJson(sessionData);
+      TappingState loadedState = TappingState.fromJson(sessionData);
+
+      // Support for re-linking source text path
+      final String? textFilePathSaved = metadata['text_file_path'];
+      if (textFilePathSaved != null && textFilePathSaved != 'unknown') {
+        ref.read(sourceTextPathProvider.notifier).state = textFilePathSaved;
+
+        // Attempt to reload the fresh text from disk if it exists
+        if (await File(textFilePathSaved).exists()) {
+          try {
+            final freshVerses = await IngestionService.ingestFile(
+              textFilePathSaved,
+            );
+            final stitchedVerses = _stitchTimestamps(
+              loadedState.verses,
+              freshVerses,
+            );
+            loadedState = loadedState.copyWith(verses: stitchedVerses);
+            _logResult("Resumed with fresh text from source file.");
+          } catch (e) {
+            _logResult(
+              "Note: Could not refresh text from source file ($e). Using cached session text.",
+            );
+          }
+        }
+      }
+
       ref.read(tappingProvider.notifier).loadSession(loadedState);
 
       // 4. Navigate
@@ -204,6 +233,32 @@ class _HomePageState extends ConsumerState<HomePage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _logResult(String msg) {
+    Logger('HomePage').info(msg);
+  }
+
+  List<Verse> _stitchTimestamps(List<Verse> oldVerses, List<Verse> newVerses) {
+    final oldWords = oldVerses.expand((v) => v.words).toList();
+    int globalIdx = 0;
+
+    return newVerses.map((v) {
+      final updatedWords = v.words.map((w) {
+        if (globalIdx < oldWords.length) {
+          final oldW = oldWords[globalIdx];
+          final updated = w.copyWith(
+            startTime: oldW.startTime,
+            endTime: oldW.endTime,
+          );
+          globalIdx++;
+          return updated;
+        }
+        globalIdx++;
+        return w;
+      }).toList();
+      return v.copyWith(words: updatedWords);
+    }).toList();
   }
 
   Future<bool?> _showSafetyDialog(String original, String selected) {

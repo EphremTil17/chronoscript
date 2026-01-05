@@ -6,6 +6,7 @@ class VerseSidebar extends StatelessWidget {
   final List<Verse> verses;
   final int selectedIndex;
   final Function(int) onVerseSelected;
+  final VoidCallback onRefreshText;
   final bool isLocked;
 
   const VerseSidebar({
@@ -13,6 +14,7 @@ class VerseSidebar extends StatelessWidget {
     required this.verses,
     required this.selectedIndex,
     required this.onVerseSelected,
+    required this.onRefreshText,
     required this.isLocked, // Should be true ONLY if we want to prevent changing verses (e.g. during recording)
   });
 
@@ -38,15 +40,31 @@ class VerseSidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 24.0, top: 40, bottom: 8),
-            child: Text(
-              "VERSES",
-              style: GoogleFonts.lexend(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.5,
-                color: kCrimson,
-              ),
+            padding: const EdgeInsets.only(
+              left: 24.0,
+              right: 12.0,
+              top: 40,
+              bottom: 8,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "VERSES",
+                  style: GoogleFonts.lexend(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                    color: kCrimson,
+                  ),
+                ),
+                IconButton(
+                  onPressed: isLocked ? null : onRefreshText,
+                  icon: const Icon(Icons.refresh, size: 20),
+                  color: kCrimson,
+                  tooltip: "Refresh text from source file",
+                ),
+              ],
             ),
           ),
 
